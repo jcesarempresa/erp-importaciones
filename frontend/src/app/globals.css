@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+:root {
+  --background: #090d16; /* Negro pizarra/índigo profundo */
+  --foreground: #f8fafc; /* slate-50 */
+  --card: #111827; /* gray-900 */
+  --card-foreground: #f8fafc;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.08) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Aero Dark Glassmorphism */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.glass-sidebar {
+  background: rgba(9, 13, 22, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.4);
+}
+
+.glass-header {
+  background: rgba(9, 13, 22, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1f5f9; /* slate-200 */
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(129, 140, 248, 0.8); /* indigo-400 */
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+  outline: none;
+}
+
+/* Custom scrollbars for a cleaner look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ─── PRINT STYLES ───────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  /* Si un portal de impresión está activo, ocultar el resto del body */
+  body:has(#print-cotizacion-root:not(:empty)) > *:not(#print-cotizacion-root),
+  body:has(#print-orden-root:not(:empty)) > *:not(#print-orden-root),
+  body:has(#print-pedido-root:not(:empty)) > *:not(#print-pedido-root),
+  body:has(#print-factura-root:not(:empty)) > *:not(#print-factura-root),
+  body:has(#print-nota-entrega-root:not(:empty)) > *:not(#print-nota-entrega-root),
+  body:has(#print-factura-cliente-root:not(:empty)) > *:not(#print-factura-cliente-root),
+  body:has(#print-recepcion-root:not(:empty)) > *:not(#print-recepcion-root) {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+    background-image: none !important;
+  }
+
+  #print-cotizacion-root, #print-orden-root, #print-pedido-root, #print-factura-root, #print-nota-entrega-root, #print-factura-cliente-root, #print-recepcion-root {
+    display: block !important;
+    position: relative;
+    top: 0; left: 0;
+    width: 100%; height: auto;
+    z-index: 99999;
+    background: white;
+    color: black;
+    padding: 0;
+    margin: 0;
+  }
+
+  .print-doc {
+    width: 100%;
+    font-family: 'Arial', sans-serif;
+    color: #111;
+  }
+
+  .print-doc table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .print-doc th, .print-doc td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    font-size: 10pt;
+  }
+
+  .print-doc th {
+    background: #1e293b !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-header-bg {
+    background: #1e293b !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-accent-bg {
+    background: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print { display: none !important; }
+  @page { margin: 1cm; size: letter portrait; }
+}
+
+/* Remove arrows/spinners from number inputs */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
