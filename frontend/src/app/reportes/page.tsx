@@ -9,6 +9,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { obtenerEmpresa, EmpresaConfig } from "@/lib/api/importaciones";
 import { useTranslation } from "@/context/LanguageContext";
 import {
   BarChart2,
@@ -253,6 +254,7 @@ export default function ReportesPage() {
   const [facturas, setFacturas] = useState<Factura[]>([]);
   const [pedidosProv, setPedidosProv] = useState<PedidoProveedor[]>([]);
   const [facturasProv, setFacturasProv] = useState<FacturaProveedor[]>([]);
+  const [empresa, setEmpresa] = useState<EmpresaConfig | null>(null);
 
   // Expanded rows
   const [expandedOrdenes, setExpandedOrdenes] = useState<Set<string>>(new Set());
@@ -267,11 +269,13 @@ export default function ReportesPage() {
           facturasSnap,
           pedidosProvSnap,
           facturasProvSnap,
+          empresaData,
         ] = await Promise.all([
           getDocs(query(collection(db, "ordenes_cliente"), orderBy("fecha", "desc"))),
           getDocs(query(collection(db, "facturas"), orderBy("fecha", "desc"))),
           getDocs(query(collection(db, "pedidos_proveedor"), orderBy("fecha", "desc"))),
           getDocs(query(collection(db, "facturas_proveedor"), orderBy("fecha", "desc"))),
+          obtenerEmpresa(),
         ]);
 
         setOrdenes(
@@ -286,6 +290,7 @@ export default function ReportesPage() {
         setFacturasProv(
           facturasProvSnap.docs.map((d) => ({ id: d.id, ...d.data() } as FacturaProveedor))
         );
+        setEmpresa(empresaData);
       } catch (e) {
         console.error("Error loading reports data", e);
       } finally {
@@ -826,8 +831,8 @@ export default function ReportesPage() {
                   r.totalEntregadoQty,
                   r.pendienteEntregaQty,
                   r.pendienteLlegadaQty,
-                  r.totalFacturadoOrden,
-                  r.saldoPendienteOrden,
+                  fmt(r.totalFacturadoOrden),
+                  fmt(r.saldoPendienteOrden),
                 ]),
               })
             }
@@ -1073,8 +1078,8 @@ export default function ReportesPage() {
                       f.fecha,
                       f.fechaVencimiento ?? "-",
                       f.estado,
-                      f.monto,
-                      f.saldoPendiente,
+                      fmt(f.monto ?? f.saldoPendiente ?? 0),
+                      fmt(f.saldoPendiente ?? 0),
                     ]),
                 })
               }
@@ -1176,9 +1181,9 @@ export default function ReportesPage() {
                   r.id.slice(-8).toUpperCase(),
                   r.cliente,
                   r.fecha,
-                  r.ingresos,
-                  r.costo,
-                  r.utilidad,
+                  fmt(r.ingresos),
+                  fmt(r.costo),
+                  fmt(r.utilidad),
                   r.margen.toFixed(2) + "%",
                 ]),
               })
@@ -1306,10 +1311,10 @@ export default function ReportesPage() {
                 filas: clientesRows.map((c) => [
                   c.nombre,
                   c.ordenes,
-                  c.totalPedido,
-                  c.totalFacturado,
-                  c.totalCobrado,
-                  c.cxcBalance,
+                  fmt(c.totalPedido),
+                  fmt(c.totalFacturado),
+                  fmt(c.totalCobrado),
+                  fmt(c.cxcBalance),
                   c.unidadesPendientes,
                 ]),
               })
@@ -1412,8 +1417,8 @@ export default function ReportesPage() {
                   p.unidadesPedidas,
                   p.unidadesEntregadas,
                   p.unidadesPendientes,
-                  p.ingresos,
-                  p.costo,
+                  fmt(p.ingresos),
+                  fmt(p.costo),
                   p.ingresos > 0
                     ? (((p.ingresos - p.costo) / p.ingresos) * 100).toFixed(2) + "%"
                     : "0%",
@@ -1540,8 +1545,8 @@ export default function ReportesPage() {
                   p.unidadesPedidas > 0
                     ? ((p.unidadesRecibidas / p.unidadesPedidas) * 100).toFixed(2) + "%"
                     : "0%",
-                  p.costoTotal,
-                  p.cxpBalance,
+                  fmt(p.costoTotal),
+                  fmt(p.cxpBalance),
                 ]),
               })
             }
@@ -1626,6 +1631,7 @@ export default function ReportesPage() {
           titulo={printModal.titulo}
           columnas={printModal.columnas}
           filas={printModal.filas}
+          empresa={empresa || undefined}
           language={language}
           onClose={() => setPrintModal(null)}
         />
