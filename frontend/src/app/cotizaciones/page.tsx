@@ -193,6 +193,21 @@ export default function CotizacionesPage() {
     setAiSearchModalOpen(false);
   };
 
+  const handleSelectSource = (f: { sitio: string; precio: string; url: string }) => {
+    if (!aiSearchResult) return;
+    const priceCleaned = f.precio.replace(/,/g, '');
+    const match = priceCleaned.match(/\$?(\d+(\.\d+)?)/);
+    let selectedCost = aiSearchResult.precioEstimado;
+    if (match) {
+      selectedCost = parseFloat(match[1]);
+    }
+    setAiSearchResult({
+      ...aiSearchResult,
+      precioEstimado: selectedCost
+    });
+    setAiSearchSellPrice(selectedCost * (1 + aiSearchMargin / 100));
+  };
+
   async function loadData() {
     setLoading(true);
     try {
@@ -1766,7 +1781,7 @@ export default function CotizacionesPage() {
                           <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">{language === "es" ? "Fuentes Encontradas" : "Found Sources"}</div>
                           <div className="space-y-1.5">
                             {aiSearchResult.fuentes.map((f, i) => (
-                              <div key={i} className="flex justify-between items-center bg-slate-900/50 p-2 rounded-lg text-xs">
+                              <div key={i} className="flex justify-between items-center bg-slate-900/50 hover:bg-indigo-950/20 border border-transparent hover:border-indigo-500/20 p-2.5 rounded-xl text-xs transition-all duration-150">
                                 <div>
                                   <span className="font-semibold text-slate-300">{f.sitio}</span>
                                   {f.url && (
@@ -1780,7 +1795,17 @@ export default function CotizacionesPage() {
                                     </a>
                                   )}
                                 </div>
-                                <span className="font-mono text-emerald-400 font-bold">{f.precio}</span>
+                                <div className="flex items-center gap-3">
+                                  <span className="font-mono text-emerald-400 font-bold text-right shrink-0">{f.precio}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectSource(f)}
+                                    className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 rounded-lg text-[9px] font-bold transition-all active:scale-95 cursor-pointer shadow-sm shrink-0"
+                                    title={language === "es" ? "Seleccionar este precio" : "Select this price"}
+                                  >
+                                    {language === "es" ? "Seleccionar" : "Select"}
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
