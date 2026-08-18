@@ -139,6 +139,9 @@ export default function CotizacionesPage() {
   } | null>(null);
   const [aiSearchError, setAiSearchError] = useState<string | null>(null);
 
+  const [aiSearchMargin, setAiSearchMargin] = useState<number>(30); // 30% por defecto
+  const [aiSearchSellPrice, setAiSearchSellPrice] = useState<number>(0);
+
   const handleOpenSearchModal = (index: number) => {
     setAiSearchIndex(index);
     setAiSearchQuery(formItems[index].descripcion || "");
@@ -163,6 +166,11 @@ export default function CotizacionesPage() {
         throw new Error(data.error);
       }
       setAiSearchResult(data);
+      if (data.precioEstimado) {
+        setAiSearchSellPrice(data.precioEstimado * (1 + aiSearchMargin / 100));
+      } else {
+        setAiSearchSellPrice(0);
+      }
     } catch (err: any) {
       setAiSearchError(err.message || "Error al realizar la investigación con IA.");
     } finally {
@@ -175,7 +183,8 @@ export default function CotizacionesPage() {
     const updated = [...formItems];
     updated[aiSearchIndex].descripcion = aiSearchResult.descripcion;
     updated[aiSearchIndex].detalles = aiSearchResult.detalles;
-    updated[aiSearchIndex].precioUnitario = aiSearchResult.precioEstimado || 0;
+    // Apply the calculated margin-adjusted selling price!
+    updated[aiSearchIndex].precioUnitario = aiSearchSellPrice || 0;
     // Auto show details if details text was found
     if (aiSearchResult.detalles) {
       updated[aiSearchIndex].showDetalles = true;
@@ -1690,17 +1699,55 @@ export default function CotizacionesPage() {
                       </div>
 
                       {(aiSearchResult.precioEstimado !== undefined) && (
-                        <div>
-                          <div className="text-[10px] font-bold text-slate-500 uppercase">{language === "es" ? "Costo Unitario Sugerido ($ USD)" : "Suggested Unit Cost ($ USD)"}</div>
-                          <div className="relative mt-1">
-                            <span className="absolute left-3 top-2 text-emerald-400 font-bold text-sm">$</span>
-                            <input
-                              type="number"
-                              value={aiSearchResult.precioEstimado}
-                              onChange={(e) => setAiSearchResult({ ...aiSearchResult, precioEstimado: Number(e.target.value) })}
-                              className="glass-input w-full pl-7 pr-3 py-2 rounded-xl text-sm font-extrabold text-emerald-450"
-                              step="0.01"
-                            />
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-800/50 pt-3">
+                          <div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase">{language === "es" ? "Costo de Compra ($ USD)" : "Purchase Cost ($ USD)"}</div>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-2 text-slate-400 font-bold text-sm">$</span>
+                              <input
+                                type="number"
+                                value={aiSearchResult.precioEstimado}
+                                onChange={(e) => {
+                                  const cost = Number(e.target.value);
+                                  setAiSearchResult({ ...aiSearchResult, precioEstimado: cost });
+                                  setAiSearchSellPrice(cost * (1 + aiSearchMargin / 100));
+                                }}
+                                className="glass-input w-full pl-7 pr-3 py-2 rounded-xl text-sm font-semibold text-slate-350"
+                                step="0.01"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-[10px] font-bold text-indigo-400 uppercase">{language === "es" ? "Margen Ganancia (%)" : "Profit Margin (%)"}</div>
+                            <div className="relative mt-1">
+                              <input
+                                type="number"
+                                value={aiSearchMargin}
+                                onChange={(e) => {
+                                  const margin = Number(e.target.value);
+                                  setAiSearchMargin(margin);
+                                  setAiSearchSellPrice(aiSearchResult.precioEstimado * (1 + margin / 100));
+                                }}
+                                className="glass-input w-full px-3 py-2 rounded-xl text-sm font-semibold text-indigo-300 pr-7"
+                                min="0"
+                              />
+                              <span className="absolute right-3 top-2 text-indigo-400 font-bold text-sm">%</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-[10px] font-bold text-emerald-400 uppercase">{language === "es" ? "Precio Venta Sugerido" : "Suggested Sell Price"}</div>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-2 text-emerald-450 font-bold text-sm">$</span>
+                              <input
+                                type="number"
+                                value={aiSearchSellPrice !== undefined ? Number(aiSearchSellPrice.toFixed(2)) : ""}
+                                onChange={(e) => setAiSearchSellPrice(Number(e.target.value))}
+                                className="glass-input w-full pl-7 pr-3 py-2 rounded-xl text-sm font-extrabold text-emerald-450 border-emerald-500/30 bg-emerald-500/5 focus:border-emerald-500"
+                                step="0.01"
+                              />
+                            </div>
                           </div>
                         </div>
                       )}
