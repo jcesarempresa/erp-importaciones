@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Procedimientos - Maximport ERP Solutions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .screenshot-container {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 p-6 md:p-12 max-w-5xl mx-auto shadow-2xl bg-white rounded-3xl my-10">
+
+  <!-- Header No-Imprimible -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-6 mb-8 gap-4 no-print">
+    <div>
+      <h1 class="text-3xl font-black text-indigo-650">Maximport ERP Solutions</h1>
+      <p class="text-sm text-slate-500 font-medium">Manual de Procedimientos y Operaciones (Paso a Paso con Imágenes)</p>
+    </div>
+    <button onclick="window.print()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-xl shadow-indigo-600/20 transition-all flex items-center gap-2 cursor-pointer">
+      <span>🖨️</span> Guardar como PDF / Imprimir
+    </button>
+  </div>
+
+  <!-- Contenido Principal del Manual -->
+  <div class="space-y-10">
+    <div class="text-center py-10 border-b border-slate-100">
+      <h1 class="text-4xl font-black text-slate-900 tracking-tight">MANUAL DE PROCEDIMIENTOS</h1>
+      <p class="text-indigo-600 font-bold uppercase tracking-widest text-xs mt-3">Guía Operativa Paso a Paso con Imágenes de Referencia</p>
+      <p class="text-slate-400 text-xs mt-1">Versión 1.0 (2026)</p>
+    </div>
+
+    <!-- Introducción y Flujo General -->
+    <section class="space-y-4">
+      <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">El Ciclo Operativo en Maximport</h2>
+      <p class="text-sm text-slate-600 leading-relaxed">
+        Este manual de procedimientos explica paso a paso el flujo de trabajo de compra, importación, despacho y cobranza del ERP. Cada procedimiento incluye imágenes de captura del sistema real para que los operadores sigan las instrucciones de forma visual.
+      </p>
+      <div class="flex flex-col md:flex-row gap-6 items-center bg-slate-50 p-6 rounded-2xl border border-slate-150 mt-4">
+        <div class="flex-1 space-y-3">
+          <h3 class="font-bold text-slate-800 text-sm uppercase">Navegación del Sistema</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            El sistema se controla por completo desde el menú lateral izquierdo. Permite acceder a los paneles de logística de carga (Recepción de Contenedores), comercialización (Cotizaciones, Órdenes de Clientes) y contabilidad (Facturación y CxC, Facturas de Proveedor).
+          </p>
+        </div>
+        <div class="w-48 shrink-0 border border-slate-200 rounded-xl overflow-hidden shadow-md screenshot-container">
+          <img src="./frontend/public/manual_images/media__1785267904226.png" alt="Menú Lateral" class="w-full h-auto" />
+          <p class="text-[9px] text-center text-slate-400 py-1 bg-slate-100">Fig 1. Barra de Navegación Lateral</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Procedimiento 1 -->
+    <section id="p1" class="space-y-4 page-break">
+      <h2 class="text-xl font-bold text-slate-900 border-l-4 border-indigo-600 pl-3">Procedimiento 1: Creación de Pedidos por IA (Gemini)</h2>
+      <p class="text-sm text-slate-600 leading-relaxed">
+        Este procedimiento permite digitalizar órdenes de compra enviadas por los clientes en formato PDF, automatizando el llenado de productos mediante inteligencia artificial.
+      </p>
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-150 space-y-3">
+        <h4 class="font-bold text-xs text-slate-700 uppercase">Pasos a seguir:</h4>
+        <ol class="list-decimal list-inside text-xs text-slate-650 space-y-2">
+          <li>Ve al menú lateral izquierdo y haz clic en <strong>Pedidos de Clientes</strong>.</li>
+          <li>Haz clic en el botón superior <strong>"Cargar PDF por IA"</strong>.</li>
+          <li>Arrastra o selecciona el archivo PDF del pedido. La IA de Google Gemini leerá el contenido y extraerá la información fiscal del cliente, los SKU, la cantidad pedida y los precios unitarios.</li>
+          <li>Revisa las filas en la pantalla de previsualización antes de guardar el pedido en la base de datos de Firestore.</li>
+        </ol>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-md screenshot-container">
+          <img src="./frontend/public/manual_images/media__1784652500390.png" alt="Carga de PDF" class="w-full h-auto" />
+          <p class="text-[9px] text-center text-slate-400 py-1 bg-slate-100">Fig 2. Pantalla de previsualización de datos por IA</p>
+        </div>
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-md screenshot-container">
+          <img src="./frontend/public/manual_images/media__1784652633020.png" alt="Confirmación de Pedido" class="w-full h-auto" />
+          <p class="text-[9px] text-center text-slate-400 py-1 bg-slate-100">Fig 3. Formulario verificado listo para registrar</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Procedimiento 2 -->
+    <section id="p2" class="space-y-4 page-break">
+      <h2 class="text-xl font-bold text-slate-900 border-l-4 border-indigo-600 pl-3">Procedimiento 2: Cotizaciones y Presupuesto Arancelario</h2>
+      <p class="text-sm text-slate-600 leading-relaxed">
+        Este procedimiento permite calcular el costo estimado de importación y venta de mercancía nacional sumando proporcionalmente gastos logísticos.
+      </p>
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-150 space-y-3">
+        <h4 class="font-bold text-xs text-slate-700 uppercase">Pasos a seguir:</h4>
+        <ol class="list-decimal list-inside text-xs text-slate-650 space-y-2">
+          <li>Ve a <strong>Cotizaciones</strong> y haz clic en <strong>Nueva Cotización</strong>.</li>
+          <li>Ingresa los productos solicitados.</li>
+          <li>En los campos numéricos de la derecha, ingresa los importes por **Flete ($)**, **Arancel ($)** y **Otros Gastos ($)** de importación.</li>
+          <li>El sistema distribuirá de forma ponderada los montos extras sobre cada producto para mostrar el costo neto de cada uno en la vista previa del PDF comercial.</li>
+        </ol>
+      </div>
+      <div class="border border-slate-200 rounded-xl overflow-hidden shadow-md max-w-2xl mx-auto screenshot-container">
+        <img src="./frontend/public/manual_images/media__1784656894133.png" alt="Cotización arancelaria" class="w-full h-auto" />
+        <p class="text-[9px] text-center text-slate-400 py-1 bg-slate-100">Fig 4. Panel de desglose de arancel, flete y otros gastos</p>
+      </div>
+    </section>
+
+    <!-- Procedimiento 3 -->
+    <section id="p3" class="space-y-4 page-break">
+      <h2 class="text-xl font-bold text-slate-900 border-l-4 border-indigo-600 pl-3">Procedimiento 3: Recepción de Contenedores y Distribución FIFO</h2>
+      <p class="text-sm text-slate-600 leading-relaxed">
+        Este procedimiento describe el ingreso físico de la carga del puerto y cómo se distribuye a las órdenes de los clientes pendientes.
+      </p>
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-150 space-y-3">
+        <h4 class="font-bold text-xs text-slate-700 uppercase">Pasos a seguir:</h4>
+        <ol class="list-decimal list-inside text-xs text-slate-650 space-y-2">
+          <li>Al llegar el contenedor físico, ve a <strong>Recepción de Contenedores</strong> y haz clic en <strong>Nueva Recepción</strong>.</li>
+          <li>El sistema te mostrará los SKU recibidos y cruzará los datos con las órdenes pendientes de los clientes de forma automática mediante el método FIFO (el pedido más viejo tiene prioridad).</li>
+          <li>Si deseas alterar la prioridad del despacho del inventario parcial, activa la casilla **"Habilitar Distribución Manual"** para ajustar las cantidades de cada cliente libremente.</li>
+          <li>Haz clic en **Procesar Recepción** para ingresar el stock al Almacén Local.</li>
+        </ol>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-md screenshot-container">
+          <img src="./frontend/public/manual_images/media__1784657698888.png" alt="Recepción Contenedor" class="w-full h-auto" />
+          <p class="text-[9px] text-center text-slate-400 py-1 bg-slate-100">Fig 5. Formulario de ingreso de lote y distribución automática</p>
+        </div>
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-md screenshot-container">
+          <img src="./frontend/public/manual_images/media__1784657779930.png" alt="Distribución manual" class="w-full h-auto" />
+          <p class="text-[9px] text-center text-slate-400 py-1 bg-slate-100">Fig 6. Vista de pre-distribución a clientes</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Procedimiento 4 -->
+    <section id="p4" class="space-y-4 page-break">
+      <h2 class="text-xl font-bold text-slate-900 border-l-4 border-indigo-600 pl-3">Procedimiento 4: Despachos y Notas de Entrega (Con/Sin Precios)</h2>
+      <p class="text-sm text-slate-600 leading-relaxed">
+        Este procedimiento controla la preparación del despacho físico y la impresión del soporte de entrega al transportista o al cliente.
+      </p>
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-150 space-y-3">
+        <h4 class="font-bold text-xs text-slate-700 uppercase">Pasos a seguir:</h4>
+        <ol class="list-decimal list-inside text-xs text-slate-650 space-y-2">
+          <li>Ve a <strong>Despachos y Entregas</strong> y haz clic en la nota de entrega del cliente.</li>
+          <li>En la barra de herramientas superior de impresión, activa o desactiva la opción **"Mostrar Precios"**:
+            * **Apagado:** La nota se imprime únicamente con SKU, cantidad y descripción (ideal para guías de transporte).
+            * **Encendido:** La nota muestra los totales comerciales (ideal para soporte de cobro al cliente).
+          <li>Elige el formato de moneda (**$ USD**, **Bs.** o **Bs. Libre pre-impreso**) y selecciona la cuenta bancaria de la empresa que se mostrará al pie del documento.</li>
+        </ol>
+      </div>
+      <div class="border border-slate-200 rounded-xl overflow-hidden shadow-md max-w-2xl mx-auto screenshot-container">
+        <img src="./frontend/public/manual_images/media__1785248873986.png" alt="Impresión de Nota de Entrega" class="w-full h-auto" />
+        <p class="text-[9px] text-center text-slate-400 py-1 bg-slate-100">Fig 7. Vista previa de impresión de Nota de Entrega con precios y cuentas bancarias seleccionadas</p>
+      </div>
+    </section>
+
+    <!-- Procedimiento 5 -->
+    <section id="p5" class="space-y-4 page-break">
+      <h2 class="text-xl font-bold text-slate-900 border-l-4 border-indigo-600 pl-3">Procedimiento 5: Facturación y Abonos con Tasa Binance</h2>
+      <p class="text-sm text-slate-600 leading-relaxed">
+        Este procedimiento describe cómo realizar cobros parciales a facturas emitidas a crédito y llevar el registro exacto de las tasas de cambio de cada abono.
+      </p>
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-150 space-y-3">
+        <h4 class="font-bold text-xs text-slate-700 uppercase">Pasos a seguir:</h4>
+        <ol class="list-decimal list-inside text-xs text-slate-650 space-y-2">
+          <li>Ve a <strong>Facturación y CxC</strong>.</li>
+          <li>Haz clic en el botón **"Cobrar"** al lado de la factura a crédito correspondiente.</li>
+          <li>En el modal, selecciona la moneda de pago (**USD** o **BS**):
+            * Si seleccionas **BS (Bolívares)**, el sistema completará automáticamente la tasa de cambio con el valor de la tasa **Binance P2P** actual.
+            * Escribe la cantidad de bolívares recibidos y ajusta la tasa de cambio manualmente si es necesario. El sistema calculará en tiempo real los dólares equivalentes.
+          <li>Ingresa el método de pago local (Pago Móvil, Transferencia Bs.) y la referencia, y haz clic en **Registrar Cobro**.</li>
+          <li>Para auditar el saldo pendiente, haz clic en **"Ver Abonos"** en la factura y se desplegará una tabla con el histórico detallado de abonos en Bolívares y dólares con sus respectivas tasas grabadas.</li>
+        </ol>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-md screenshot-container">
+          <img src="./frontend/public/manual_images/media__1785247598677.png" alt="Registro de pago" class="w-full h-auto" />
+          <p class="text-[9px] text-center text-slate-400 py-1 bg-slate-100">Fig 8. Formulario de registro de abono con selector de tasa</p>
+        </div>
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-md screenshot-container flex flex-col justify-center bg-slate-900 p-4">
+          <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/60 text-xs">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 bg-slate-900/30 text-slate-400 font-bold">
+                  <th class="p-2">Fecha</th>
+                  <th class="p-2">Método</th>
+                  <th class="p-2 text-right">Monto</th>
+                  <th class="p-2 text-right">Equivalente USD</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="p-2 text-slate-300">18/08/2026</td>
+                  <td class="p-2 text-slate-300">Pago Móvil</td>
+                  <td class="p-2 text-right text-amber-400">Bs. 3,650.00 <div class="text-[8px] text-slate-500">Tasa: 36.50</div></td>
+                  <td class="p-2 text-right font-bold text-emerald-400">$100.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="text-[9px] text-center text-slate-400 py-1 bg-slate-800 mt-4 rounded-lg">Fig 9. Tabla de histórico de abonos con la tasa Binance registrada</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t border-slate-200 mt-12 pt-6 text-center text-xs text-slate-400 no-print">
+    <p>Manual oficial de procedimientos - Maximport ERP Solutions. Todos los derechos reservados.</p>
+  </div>
+
+</body>
+</html>

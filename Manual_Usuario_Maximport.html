@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Usuario - Maximport ERP Solutions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 p-6 md:p-12 max-w-4xl mx-auto shadow-2xl bg-white rounded-3xl my-10">
+
+  <!-- Header No-Imprimible -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-6 mb-8 gap-4 no-print">
+    <div>
+      <h1 class="text-3xl font-black text-indigo-650">Maximport ERP Solutions</h1>
+      <p class="text-sm text-slate-500 font-medium">Manual de Operación del Sistema</p>
+    </div>
+    <button onclick="window.print()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-xl shadow-indigo-600/20 transition-all flex items-center gap-2 cursor-pointer">
+      <span>🖨️</span> Guardar como PDF / Imprimir
+    </button>
+  </div>
+
+  <!-- Contenido Principal del Manual -->
+  <div class="space-y-8">
+    <div class="text-center py-10 border-b border-slate-100">
+      <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">MANUAL DE USUARIO OFICIAL</h1>
+      <p class="text-indigo-600 font-bold uppercase tracking-widest text-xs mt-3">Sistema de Logística, Importaciones y Control Financiero</p>
+      <p class="text-slate-400 text-xs mt-1">Versión 1.0 (2026)</p>
+    </div>
+
+    <!-- Índice -->
+    <div class="bg-slate-50 rounded-2xl p-6 border border-slate-150">
+      <h2 class="text-lg font-bold text-slate-900 mb-4">Índice del Manual</h2>
+      <ol class="list-decimal list-inside space-y-2 text-sm text-indigo-600 font-medium">
+        <li><a href="#dashboard" class="hover:underline">Panel de Control (Dashboard)</a></li>
+        <li><a href="#contacts" class="hover:underline">Clientes y Proveedores (Contactos)</a></li>
+        <li><a href="#ia-orders" class="hover:underline">Pedidos de Clientes e Importación por IA (Gemini)</a></li>
+        <li><a href="#quotes" class="hover:underline">Cotizaciones y Presupuestos Arancelarios</a></li>
+        <li><a href="#orders" class="hover:underline">Órdenes de Clientes y Asignación de Proveedores</a></li>
+        <li><a href="#supplier" class="hover:underline">Pedidos a Proveedores (Compras)</a></li>
+        <li><a href="#reception" class="hover:underline">Recepción de Contenedores y Distribución FIFO</a></li>
+        <li><a href="#warehouse" class="hover:underline">Almacén e Inventario Local</a></li>
+        <li><a href="#delivery" class="hover:underline">Despachos y Notas de Entrega</a></li>
+        <li><a href="#billing" class="hover:underline">Facturación, CxC y Abonos con Tasa Binance</a></li>
+      </ol>
+    </div>
+
+    <!-- Secciones -->
+    <div class="space-y-12 pt-6">
+      
+      <!-- Sec 1 -->
+      <section id="dashboard" class="space-y-3">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">1. Panel de Control (Dashboard)</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          El panel de inicio es la central de monitoreo del ERP. Proporciona una visualización ejecutiva e indicadores clave en tiempo real:
+        </p>
+        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1.5 pl-2">
+          <li><strong>Órdenes Activas:</strong> Cantidad de ventas en proceso de compra, recepción o despacho.</li>
+          <li><strong>En Importación:</strong> Contenedores o lotes en tránsito marítimo/aéreo desde fábricas en el extranjero.</li>
+          <li><strong>Cuentas por Cobrar (CxC):</strong> Balance financiero total adeudado por los clientes en facturas emitidas a crédito.</li>
+          <li><strong>Alertas de Aduana:</strong> Indicador de estado del puerto en línea para control de importaciones.</li>
+        </ul>
+      </section>
+
+      <!-- Sec 2 -->
+      <section id="contacts" class="space-y-3 page-break">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">2. Clientes y Proveedores (Contactos)</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          Directorio centralizado para administrar las contrapartes comerciales de la empresa.
+        </p>
+        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1.5 pl-2">
+          <li><strong>Registro de Datos:</strong> Permite ingresar datos fiscales completos como RIF/Cédula, Razón Social, Dirección Fiscal, Teléfono, Correo Electrónico y Dirección de Despacho del cliente.</li>
+          <li><strong>Historial Unificado:</strong> Al hacer clic en un contacto, se despliega una vista con todas las cotizaciones previas, compras realizadas y estado de cuenta financiero asociado.</li>
+        </ul>
+      </section>
+
+      <!-- Sec 3 -->
+      <section id="ia-orders" class="space-y-3">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">3. Pedidos de Clientes e Importación por IA (Gemini)</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          Este módulo permite ingresar los pedidos de los clientes. Cuenta con **tecnología de lectura inteligente mediante Inteligencia Artificial (Google Gemini)**:
+        </p>
+        <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-xl my-2">
+          <h4 class="font-bold text-indigo-950 text-xs uppercase tracking-wide">Paso a paso para usar la IA:</h4>
+          <ol class="list-decimal list-inside text-xs text-indigo-900 space-y-1 mt-2">
+            <li>Haz clic en el botón <strong>"Cargar PDF por IA"</strong>.</li>
+            <li>Sube cualquier archivo PDF (cotizaciones de proveedores, facturas externas o correos escaneados).</li>
+            <li>La IA de Gemini procesará el documento, identificará o creará al cliente, y completará de forma autónoma los productos (SKU, descripciones, cantidades y precios unitarios).</li>
+            <li>Valida la información extraída en pantalla y haz clic en <strong>Guardar</strong>.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Sec 4 -->
+      <section id="quotes" class="space-y-3 page-break">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">4. Cotizaciones y Presupuestos Arancelarios</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          Diseñado para estructurar presupuestos complejos agregando factores logísticos de importación proporcionalmente:
+        </p>
+        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1.5 pl-2">
+          <li><strong>Costos Adicionales:</strong> Permite ingresar cargos por <strong>Flete logístico ($)</strong>, <strong>Aranceles aduanales (%)</strong> y <strong>Otros Gastos ($)</strong>.</li>
+          <li><strong>Cálculo de Totales:</strong> El sistema distribuye automáticamente estos costos extras sobre el precio base de cada ítem de forma ponderada, mostrando el costo neto final y el total general.</li>
+          <li><strong>Impresión Profesional:</strong> Descarga directa del presupuesto formateado listo para enviar al cliente.</li>
+        </ul>
+      </section>
+
+      <!-- Sec 5 -->
+      <section id="orders" class="space-y-3">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">5. Órdenes de Clientes y Asignación de Proveedores</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          Una vez aprobada una cotización por el cliente, se formaliza como una **Orden de Venta**:
+        </p>
+        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1.5 pl-2">
+          <li><strong>Asignación por Ítem:</strong> Dado que un pedido de un cliente puede incluir productos fabricados por distintos proveedores internacionales, puedes asignar el proveedor correspondiente a cada artículo individualmente.</li>
+          <li><strong>Consolidación automática:</strong> Al guardar la orden, el ERP divide automáticamente la solicitud en múltiples Órdenes de Compra agrupadas por proveedor.</li>
+        </ul>
+      </section>
+
+      <!-- Sec 6 -->
+      <section id="supplier" class="space-y-3 page-break">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">6. Pedidos a Proveedores (Compras)</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          Control y seguimiento de tus compras internacionales.
+        </p>
+        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1.5 pl-2">
+          <li><strong>Órdenes Consolidadas:</strong> Genera documentos de compra (Purchase Orders) listos para enviar a las fábricas.</li>
+          <li><strong>Seguimiento Logístico:</strong> Registra abonos de pago a los proveedores, fechas estimadas de entrega de fábrica y asocia el número del contenedor marítimo en tránsito.</li>
+        </ul>
+      </section>
+
+      <!-- Sec 7 -->
+      <section id="reception" class="space-y-3">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">7. Recepción de Contenedores y Distribución FIFO</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          Módulo logístico para dar entrada física de mercancía al almacén nacional:
+        </p>
+        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1.5 pl-2">
+          <li><strong>Distribución Automática (FIFO):</strong> Al recibir la carga de un contenedor, el sistema detecta qué clientes tienen órdenes pendientes para esos productos y asigna la mercancía automáticamente priorizando los pedidos más antiguos.</li>
+          <li><strong>Modo Manual:</strong> En caso de recibir cantidades parciales, puedes habilitar la distribución manual para decidir a qué cliente específico despachar.</li>
+        </ul>
+      </section>
+
+      <!-- Sec 8 -->
+      <section id="warehouse" class="space-y-3 page-break">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">8. Almacén e Inventario Local</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          Visualización y auditoría del stock físico nacional en tiempo real:
+        </p>
+        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1.5 pl-2">
+          <li><strong>Stock Disponible:</strong> Control detallado de mercancía física disponible para entrega inmediata.</li>
+          <li><strong>Buscador por Filtros:</strong> Filtra instantáneamente por código SKU o palabras clave de la descripción del producto.</li>
+        </ul>
+      </section>
+
+      <!-- Sec 9 -->
+      <section id="delivery" class="space-y-3">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">9. Despachos y Notas de Entrega</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          Controla la salida física de mercancía hacia los clientes:
+        </p>
+        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1.5 pl-2">
+          <li><strong>Nota de Entrega:</strong> Genera e imprime el aval de despacho físico para firma de recibido del cliente.</li>
+          <li><strong>Ocultar/Mostrar Precios:</strong> Interruptor que permite imprimir la nota de entrega sin precios (ideal para guías de transporte) o con precios (para facturación y cobro comercial).</li>
+          <li><strong>Formatos Multi-moneda:</strong> Impresión compatible con facturación en bolívares (tasa BCV/Binance) o dólares comerciales.</li>
+        </ul>
+      </section>
+
+      <!-- Sec 10 -->
+      <section id="billing" class="space-y-3 page-break">
+        <h2 class="text-2xl font-bold text-slate-900 border-b pb-2">10. Facturación, CxC y Abonos con Tasa Binance</h2>
+        <p class="text-slate-650 text-sm leading-relaxed">
+          Control financiero de tus cuentas por cobrar a clientes a crédito:
+        </p>
+        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1.5 pl-2">
+          <li><strong>Facturar Despachos:</strong> Permite agrupar una o varias notas de entrega despachadas a un cliente y convertirlas en una factura formal.</li>
+          <li><strong>Registro de Abonos en Bolívares (Bs.):</strong> Cuando un cliente abona en bolívares a una factura a crédito, ingresas el monto en bolívares y la <strong>tasa de cambio utilizada</strong> (se pre-completa con la tasa Binance del día). El sistema descuenta el valor equivalente en dólares del saldo pendiente.</li>
+          <li><strong>Historial Detallado de Abonos:</strong> Cada abono se registra cronológicamente en una sub-tabla dentro de la factura. Al hacer clic en el botón **"Abonos"** de la factura, podrás auditar todos los pagos que ha hecho el cliente, visualizando el método, referencia, moneda de pago, tasa de cambio utilizada y el equivalente en dólares descontado.</li>
+        </ul>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t border-slate-200 mt-12 pt-6 text-center text-xs text-slate-400 no-print">
+    <p>Manual oficial de operación - Maximport ERP Solutions. Todos los derechos reservados.</p>
+  </div>
+
+</body>
+</html>
