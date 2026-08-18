@@ -136,12 +136,12 @@ function buildPrintHTML(orden: OrdenCliente, empresa: EmpresaConfig, lang: strin
 <div style="font-family: Arial, sans-serif; color: #000; background: white; padding: 40px; box-sizing: border-box; width: 100%; min-height: 100%;">
   
   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
-    <div style="font-size: 11px; line-height: 1.4; font-weight: bold; width: 40%;">
-      <div style="font-size: 14px; margin-bottom: 4px;">UNIDAD DE EQUIPOS ESPECIALES, LLC</div>
-      <div>6595 NW 36TH STREET SUITE 111</div>
-      <div>MIAMI, FLORIDA 33166</div>
-      <div>PH (305) 870-9669 · FAX (305) 870-9889</div>
-      <div>sales@udeeusa.com</div>
+    <div style="font-size: 11px; line-height: 1.4; font-weight: bold; width: 45%;">
+      <div style="font-size: 14px; margin-bottom: 4px;">${empresa.nombre || "UNIDAD DE EQUIPOS ESPECIALES, LLC"}</div>
+      ${empresa.rif ? `<div>RIF: ${empresa.rif}</div>` : ""}
+      <div>${empresa.direccion || ""}</div>
+      ${empresa.telefono ? `<div>PH: ${empresa.telefono}</div>` : ""}
+      ${empresa.email ? `<div>${empresa.email}</div>` : ""}
     </div>
     
     <div style="width: 20%; display: flex; justify-content: center;">
