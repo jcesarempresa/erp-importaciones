@@ -26,7 +26,8 @@ import {
   Mail,
   Phone,
   MapPin,
-  List
+  List,
+  Search
 } from "lucide-react";
 import { 
   obtenerCotizaciones, 
@@ -124,6 +125,64 @@ export default function CotizacionesPage() {
   // Estados para extracción de PDF (IA)
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
+
+  // Estados para búsqueda de precios por IA (Gemini Grounding)
+  const [aiSearchModalOpen, setAiSearchModalOpen] = useState(false);
+  const [aiSearchIndex, setAiSearchIndex] = useState<number | null>(null);
+  const [aiSearchQuery, setAiSearchQuery] = useState("");
+  const [aiSearchLoading, setAiSearchLoading] = useState(false);
+  const [aiSearchResult, setAiSearchResult] = useState<{
+    descripcion: string;
+    detalles: string;
+    precioEstimado: number;
+    fuentes?: Array<{ sitio: string; precio: string; url: string }>;
+  } | null>(null);
+  const [aiSearchError, setAiSearchError] = useState<string | null>(null);
+
+  const handleOpenSearchModal = (index: number) => {
+    setAiSearchIndex(index);
+    setAiSearchQuery(formItems[index].descripcion || "");
+    setAiSearchResult(null);
+    setAiSearchError(null);
+    setAiSearchModalOpen(true);
+  };
+
+  const handleAISearch = async () => {
+    if (!aiSearchQuery.trim()) return;
+    setAiSearchLoading(true);
+    setAiSearchError(null);
+    setAiSearchResult(null);
+    try {
+      const res = await fetch("/api/search-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: aiSearchQuery }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      setAiSearchResult(data);
+    } catch (err: any) {
+      setAiSearchError(err.message || "Error al realizar la investigación con IA.");
+    } finally {
+      setAiSearchLoading(false);
+    }
+  };
+
+  const handleApplyAISearchResult = () => {
+    if (aiSearchIndex === null || !aiSearchResult) return;
+    const updated = [...formItems];
+    updated[aiSearchIndex].descripcion = aiSearchResult.descripcion;
+    updated[aiSearchIndex].detalles = aiSearchResult.detalles;
+    updated[aiSearchIndex].precioUnitario = aiSearchResult.precioEstimado || 0;
+    // Auto show details if details text was found
+    if (aiSearchResult.detalles) {
+      updated[aiSearchIndex].showDetalles = true;
+    }
+    setFormItems(updated);
+    setAiSearchModalOpen(false);
+  };
 
   async function loadData() {
     setLoading(true);
@@ -1350,6 +1409,14 @@ export default function CotizacionesPage() {
                         >
                           <FileText className="h-4 w-4" />
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenSearchModal(index)}
+                          className="p-2 rounded-lg text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 transition-colors cursor-pointer shrink-0"
+                          title={language === "es" ? "Investigar con IA (Gemini)" : "Investigate with AI (Gemini)"}
+                        >
+                          <Search className="h-4 w-4" />
+                        </button>
                         {formItems.length > 1 && (
                           <button
                             type="button"
@@ -1542,6 +1609,143 @@ export default function CotizacionesPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Búsqueda de Productos con IA (Gemini Grounding) */}
+      {aiSearchModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setAiSearchModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div>
+              <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                <span>🔍</span> {language === "es" ? "Investigar Producto con IA" : "Investigate Product with AI"}
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                {language === "es"
+                  ? "Gemini buscará en internet en tiempo real para encontrar precios mayoristas, especificaciones y distribuidores."
+                  : "Gemini will search the internet in real time to find wholesale prices, specs, and suppliers."}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  {language === "es" ? "Término de Búsqueda / Producto" : "Search Term / Product"}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={aiSearchQuery}
+                    onChange={(e) => setAiSearchQuery(e.target.value)}
+                    placeholder={language === "es" ? "Ej. iPhone 15 Pro Max 256GB precio mayorista" : "e.g. wholesale iPhone 15 Pro Max 256GB"}
+                    className="glass-input flex-1 px-3 py-2 rounded-xl text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAISearch}
+                    disabled={aiSearchLoading || !aiSearchQuery.trim()}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/30 text-white rounded-xl font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-500/10"
+                  >
+                    {aiSearchLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <span>Buscar</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {aiSearchError && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>{aiSearchError}</span>
+                </div>
+              )}
+
+              {aiSearchResult && (
+                <div className="space-y-4 pt-2 border-t border-slate-800">
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-slate-300">{language === "es" ? "Resultados de la Investigación" : "Research Results"}</h4>
+                    
+                    <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-4 space-y-3">
+                      <div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase">{language === "es" ? "Descripción Sugerida" : "Suggested Description"}</div>
+                        <div className="text-sm font-semibold text-slate-200 mt-0.5">{aiSearchResult.descripcion}</div>
+                      </div>
+
+                      {(aiSearchResult.precioEstimado !== undefined) && (
+                        <div>
+                          <div className="text-[10px] font-bold text-slate-500 uppercase">{language === "es" ? "Costo Unitario Sugerido ($ USD)" : "Suggested Unit Cost ($ USD)"}</div>
+                          <div className="text-base font-extrabold text-emerald-400 mt-0.5">
+                            ${(aiSearchResult.precioEstimado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                      )}
+
+                      {aiSearchResult.detalles && (
+                        <div>
+                          <div className="text-[10px] font-bold text-slate-500 uppercase">{language === "es" ? "Especificaciones y Detalles" : "Specs and Details"}</div>
+                          <div className="text-xs text-slate-400 mt-1 whitespace-pre-line bg-slate-900/30 p-2 rounded-lg leading-relaxed">
+                            {aiSearchResult.detalles}
+                          </div>
+                        </div>
+                      )}
+
+                      {aiSearchResult.fuentes && aiSearchResult.fuentes.length > 0 && (
+                        <div>
+                          <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">{language === "es" ? "Fuentes Encontradas" : "Found Sources"}</div>
+                          <div className="space-y-1.5">
+                            {aiSearchResult.fuentes.map((f, i) => (
+                              <div key={i} className="flex justify-between items-center bg-slate-900/50 p-2 rounded-lg text-xs">
+                                <div>
+                                  <span className="font-semibold text-slate-300">{f.sitio}</span>
+                                  {f.url && (
+                                    <a
+                                      href={f.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-indigo-400 hover:underline block text-[10px]"
+                                    >
+                                      Ver enlace
+                                    </a>
+                                  )}
+                                </div>
+                                <span className="font-mono text-emerald-400 font-bold">{f.precio}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setAiSearchModalOpen(false)}
+                      className="px-4 py-2 border border-slate-800 hover:bg-white/5 rounded-xl text-slate-400 font-semibold text-xs transition-all cursor-pointer"
+                    >
+                      {language === "es" ? "Descartar" : "Discard"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApplyAISearchResult}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-xs transition-all cursor-pointer shadow-lg shadow-indigo-500/10 animate-pulse"
+                    >
+                      {language === "es" ? "Aplicar al Ítem" : "Apply to Item"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
