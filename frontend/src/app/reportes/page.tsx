@@ -17,13 +17,13 @@ import {
   Users,
   Package,
   AlertTriangle,
-  TrendingUp,
+  FileSpreadsheet,
+  FileDown,
+  Printer,
   Download,
   ChevronDown,
   ChevronUp,
   Clock,
-  CheckCircle,
-  XCircle,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -88,24 +88,62 @@ interface FacturaProveedor {
   fecha: string;
 }
 
-// ─── CSV Helper ──────────────────────────────────────────────────────────────
+// ─── Export Helpers ───────────────────────────────────────────────────────────
 
-function exportCSV(rows: Record<string, unknown>[], filename: string) {
+async function exportExcel(
+  rows: Record<string, unknown>[],
+  filename: string,
+  sheetName = "Reporte"
+) {
   if (!rows.length) return;
-  const headers = Object.keys(rows[0]);
-  const csv = [
-    headers.join(","),
-    ...rows.map((r) =>
-      headers.map((h) => JSON.stringify(r[h] ?? "")).join(",")
-    ),
-  ].join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  const XLSX = await import("xlsx");
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, filename.endsWith(".xlsx") ? filename : filename + ".xlsx");
+}
+
+async function exportPDF(
+  columns: string[],
+  rows: (string | number)[][],
+  title: string,
+  filename: string
+) {
+  const { default: jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+
+  // Title
+  doc.setFontSize(14);
+  doc.setTextColor(40);
+  doc.text(title, 40, 40);
+
+  // Date
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  doc.text(
+    `Generado: ${new Date().toLocaleDateString("es-DO", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`,
+    40,
+    58
+  );
+
+  autoTable(doc, {
+    head: [columns],
+    body: rows,
+    startY: 70,
+    styles: { fontSize: 8, cellPadding: 4 },
+    headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    margin: { left: 40, right: 40 },
+  });
+
+  doc.save(filename.endsWith(".pdf") ? filename : filename + ".pdf");
 }
 
 // ─── KPI Card ────────────────────────────────────────────────────────────────
@@ -141,25 +179,36 @@ function KpiCard({
 
 function SectionHeader({
   title,
-  onExport,
-  exportLabel,
+  onExportExcel,
+  onExportPDF,
 }: {
   title: string;
-  onExport?: () => void;
-  exportLabel?: string;
+  onExportExcel?: () => void;
+  onExportPDF?: () => void;
 }) {
   return (
     <div className="flex items-center justify-between mb-3">
       <h2 className="text-base font-semibold text-white">{title}</h2>
-      {onExport && (
-        <button
-          onClick={onExport}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          <Download className="w-3.5 h-3.5" />
-          {exportLabel ?? "CSV"}
-        </button>
-      )}
+      <div className="flex items-center gap-2">
+        {onExportExcel && (
+          <button
+            onClick={onExportExcel}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            Excel
+          </button>
+        )}
+        {onExportPDF && (
+          <button
+            onClick={onExportPDF}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            PDF
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -688,10 +737,28 @@ export default function ReportesPage() {
             <div>
               <SectionHeader
                 title={t("⚡ Ítems listos para despachar", "⚡ Items ready to dispatch")}
-                onExport={() =>
-                  exportCSV(
-                    kpis.itemsListos,
-                    "items_listos_despachar.csv"
+                onExportExcel={() =>
+                  exportExcel(
+                    kpis.itemsListos.map((i) => ({
+                      Orden: i.ordenId.slice(-8).toUpperCase(),
+                      Cliente: i.cliente,
+                      Producto: i.descripcion,
+                      "Cantidad Pendiente": i.pendiente,
+                    })),
+                    "items_listos_despachar"
+                  )
+                }
+                onExportPDF={() =>
+                  exportPDF(
+                    ["Orden", "Cliente", "Producto", "Cant. Pendiente"],
+                    kpis.itemsListos.map((i) => [
+                      i.ordenId.slice(-8).toUpperCase(),
+                      i.cliente,
+                      i.descripcion,
+                      i.pendiente,
+                    ]),
+                    "Ítems Listos para Despachar",
+                    "items_listos_despachar"
                   )
                 }
               />
@@ -742,23 +809,44 @@ export default function ReportesPage() {
         <div>
           <SectionHeader
             title={t("Seguimiento de Órdenes de Cliente", "Customer Order Tracking")}
-            onExport={() =>
-              exportCSV(
+            onExportExcel={() =>
+              exportExcel(
                 ordenesRows.map((r) => ({
-                  orden: r.orden.id,
-                  cliente: r.orden.clienteNombre,
-                  fecha: r.orden.fecha,
-                  estado: r.orden.estado,
-                  qty_pedida: r.totalPedidoQty,
-                  qty_recibida: r.totalRecibido,
-                  qty_entregada: r.totalEntregadoQty,
-                  pendiente_despacho: r.pendienteEntregaQty,
-                  pendiente_llegada: r.pendienteLlegadaQty,
-                  total_orden: r.totalPedido,
-                  total_facturado: r.totalFacturadoOrden,
-                  saldo_cxc: r.saldoPendienteOrden,
+                  Orden: r.orden.id.slice(-8).toUpperCase(),
+                  Cliente: r.orden.clienteNombre,
+                  Fecha: r.orden.fecha,
+                  Estado: r.orden.estado,
+                  "Qty Pedida": r.totalPedidoQty,
+                  "Qty Recibida": r.totalRecibido,
+                  "Qty Entregada": r.totalEntregadoQty,
+                  "Pte. Despacho": r.pendienteEntregaQty,
+                  "Pte. Llegada": r.pendienteLlegadaQty,
+                  "Total Orden": r.totalPedido,
+                  "Total Facturado": r.totalFacturadoOrden,
+                  "Saldo CxC": r.saldoPendienteOrden,
                 })),
-                "ordenes_seguimiento.csv"
+                "ordenes_seguimiento",
+                "Órdenes"
+              )
+            }
+            onExportPDF={() =>
+              exportPDF(
+                ["Orden","Cliente","Fecha","Estado","Ped.","Rec.","Entr.","P.Desp","P.Lleg","Facturado","Saldo"],
+                ordenesRows.map((r) => [
+                  r.orden.id.slice(-8).toUpperCase(),
+                  r.orden.clienteNombre,
+                  r.orden.fecha,
+                  r.orden.estado,
+                  r.totalPedidoQty,
+                  r.totalRecibido,
+                  r.totalEntregadoQty,
+                  r.pendienteEntregaQty,
+                  r.pendienteLlegadaQty,
+                  r.totalFacturadoOrden,
+                  r.saldoPendienteOrden,
+                ]),
+                "Seguimiento de Órdenes de Cliente",
+                "ordenes_seguimiento"
               )
             }
           />
@@ -966,20 +1054,39 @@ export default function ReportesPage() {
           <div>
             <SectionHeader
               title={t("Detalle de Facturas", "Invoice Detail")}
-              onExport={() =>
-                exportCSV(
+              onExportExcel={() =>
+                exportExcel(
                   cobrosData.facturas
                     .filter((f) => f.estado !== "anulada")
                     .map((f) => ({
-                      factura: f.id,
-                      cliente: f.clienteNombre,
-                      fecha: f.fecha,
-                      vencimiento: f.fechaVencimiento ?? "",
-                      estado: f.estado,
-                      monto: f.monto,
-                      saldo: f.saldoPendiente,
+                      Factura: f.id.slice(-8).toUpperCase(),
+                      Cliente: f.clienteNombre,
+                      Fecha: f.fecha,
+                      Vencimiento: f.fechaVencimiento ?? "",
+                      Estado: f.estado,
+                      Monto: f.monto,
+                      Saldo: f.saldoPendiente,
                     })),
-                  "facturas_cxc.csv"
+                  "facturas_cxc",
+                  "CxC"
+                )
+              }
+              onExportPDF={() =>
+                exportPDF(
+                  ["Factura", "Cliente", "Fecha", "Vencimiento", "Estado", "Monto", "Saldo"],
+                  cobrosData.facturas
+                    .filter((f) => f.estado !== "anulada")
+                    .map((f) => [
+                      f.id.slice(-8).toUpperCase(),
+                      f.clienteNombre,
+                      f.fecha,
+                      f.fechaVencimiento ?? "-",
+                      f.estado,
+                      f.monto,
+                      f.saldoPendiente,
+                    ]),
+                  "Detalle de Facturas – CxC",
+                  "facturas_cxc"
                 )
               }
             />
@@ -1049,18 +1156,35 @@ export default function ReportesPage() {
         <div>
           <SectionHeader
             title={t("Rentabilidad por Orden", "Profitability by Order")}
-            onExport={() =>
-              exportCSV(
+            onExportExcel={() =>
+              exportExcel(
                 rentabilidadRows.map((r) => ({
-                  orden: r.id,
-                  cliente: r.cliente,
-                  fecha: r.fecha,
-                  ingresos: r.ingresos,
-                  costo: r.costo,
-                  utilidad: r.utilidad,
-                  margen_pct: r.margen.toFixed(2),
+                  Orden: r.id.slice(-8).toUpperCase(),
+                  Cliente: r.cliente,
+                  Fecha: r.fecha,
+                  Ingresos: r.ingresos,
+                  Costo: r.costo,
+                  Utilidad: r.utilidad,
+                  "Margen %": r.margen.toFixed(2),
                 })),
-                "rentabilidad_ordenes.csv"
+                "rentabilidad_ordenes",
+                "Rentabilidad"
+              )
+            }
+            onExportPDF={() =>
+              exportPDF(
+                ["Orden", "Cliente", "Fecha", "Ingresos", "Costo", "Utilidad", "Margen %"],
+                rentabilidadRows.map((r) => [
+                  r.id.slice(-8).toUpperCase(),
+                  r.cliente,
+                  r.fecha,
+                  r.ingresos,
+                  r.costo,
+                  r.utilidad,
+                  r.margen.toFixed(2) + "%",
+                ]),
+                "Rentabilidad por Orden",
+                "rentabilidad_ordenes"
               )
             }
           />
@@ -1156,18 +1280,35 @@ export default function ReportesPage() {
         <div>
           <SectionHeader
             title={t("Análisis por Cliente", "Client Analysis")}
-            onExport={() =>
-              exportCSV(
+            onExportExcel={() =>
+              exportExcel(
                 clientesRows.map((c) => ({
-                  cliente: c.nombre,
-                  ordenes: c.ordenes,
-                  total_pedido: c.totalPedido,
-                  total_facturado: c.totalFacturado,
-                  total_cobrado: c.totalCobrado,
-                  cxc_balance: c.cxcBalance,
-                  unidades_pendientes: c.unidadesPendientes,
+                  Cliente: c.nombre,
+                  Órdenes: c.ordenes,
+                  "Total Pedido": c.totalPedido,
+                  "Total Facturado": c.totalFacturado,
+                  "Total Cobrado": c.totalCobrado,
+                  "Saldo CxC": c.cxcBalance,
+                  "Uds. Pendientes": c.unidadesPendientes,
                 })),
-                "clientes_analisis.csv"
+                "clientes_analisis",
+                "Clientes"
+              )
+            }
+            onExportPDF={() =>
+              exportPDF(
+                ["Cliente", "Órdenes", "Total Pedido", "Facturado", "Cobrado", "Saldo CxC", "Uds. Pend."],
+                clientesRows.map((c) => [
+                  c.nombre,
+                  c.ordenes,
+                  c.totalPedido,
+                  c.totalFacturado,
+                  c.totalCobrado,
+                  c.cxcBalance,
+                  c.unidadesPendientes,
+                ]),
+                "Análisis por Cliente",
+                "clientes_analisis"
               )
             }
           />
@@ -1234,20 +1375,39 @@ export default function ReportesPage() {
         <div>
           <SectionHeader
             title={t("Análisis por Producto", "Product Analysis")}
-            onExport={() =>
-              exportCSV(
+            onExportExcel={() =>
+              exportExcel(
                 productosRows.map((p) => ({
-                  producto: p.descripcion,
-                  uds_pedidas: p.unidadesPedidas,
-                  uds_entregadas: p.unidadesEntregadas,
-                  uds_pendientes: p.unidadesPendientes,
-                  ingresos: p.ingresos,
-                  costo: p.costo,
-                  margen: p.ingresos > 0
+                  Producto: p.descripcion,
+                  "Uds. Pedidas": p.unidadesPedidas,
+                  "Uds. Entregadas": p.unidadesEntregadas,
+                  "Uds. Pendientes": p.unidadesPendientes,
+                  Ingresos: p.ingresos,
+                  Costo: p.costo,
+                  "Margen %": p.ingresos > 0
                     ? (((p.ingresos - p.costo) / p.ingresos) * 100).toFixed(2)
                     : "0.00",
                 })),
-                "productos_analisis.csv"
+                "productos_analisis",
+                "Productos"
+              )
+            }
+            onExportPDF={() =>
+              exportPDF(
+                ["Producto", "Ped.", "Entr.", "Pend.", "Ingresos", "Costo", "Margen %"],
+                productosRows.map((p) => [
+                  p.descripcion,
+                  p.unidadesPedidas,
+                  p.unidadesEntregadas,
+                  p.unidadesPendientes,
+                  p.ingresos,
+                  p.costo,
+                  p.ingresos > 0
+                    ? (((p.ingresos - p.costo) / p.ingresos) * 100).toFixed(2) + "%"
+                    : "0%",
+                ]),
+                "Análisis por Producto",
+                "productos_analisis"
               )
             }
           />
@@ -1332,21 +1492,40 @@ export default function ReportesPage() {
         <div>
           <SectionHeader
             title={t("Análisis por Proveedor", "Supplier Analysis")}
-            onExport={() =>
-              exportCSV(
+            onExportExcel={() =>
+              exportExcel(
                 proveedoresRows.map((p) => ({
-                  proveedor: p.nombre,
-                  ordenes: p.ordenes,
-                  uds_pedidas: p.unidadesPedidas,
-                  uds_recibidas: p.unidadesRecibidas,
-                  cumplimiento_pct:
+                  Proveedor: p.nombre,
+                  Órdenes: p.ordenes,
+                  "Uds. Pedidas": p.unidadesPedidas,
+                  "Uds. Recibidas": p.unidadesRecibidas,
+                  "Cumplim. %":
                     p.unidadesPedidas > 0
                       ? ((p.unidadesRecibidas / p.unidadesPedidas) * 100).toFixed(2)
                       : "0.00",
-                  costo_total: p.costoTotal,
-                  cxp_balance: p.cxpBalance,
+                  "Costo Total": p.costoTotal,
+                  "Saldo CxP": p.cxpBalance,
                 })),
-                "proveedores_analisis.csv"
+                "proveedores_analisis",
+                "Proveedores"
+              )
+            }
+            onExportPDF={() =>
+              exportPDF(
+                ["Proveedor", "Órdenes", "Uds. Ped.", "Uds. Rec.", "Cumplim. %", "Costo Total", "Saldo CxP"],
+                proveedoresRows.map((p) => [
+                  p.nombre,
+                  p.ordenes,
+                  p.unidadesPedidas,
+                  p.unidadesRecibidas,
+                  p.unidadesPedidas > 0
+                    ? ((p.unidadesRecibidas / p.unidadesPedidas) * 100).toFixed(2) + "%"
+                    : "0%",
+                  p.costoTotal,
+                  p.cxpBalance,
+                ]),
+                "Análisis por Proveedor",
+                "proveedores_analisis"
               )
             }
           />
