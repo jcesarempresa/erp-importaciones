@@ -79,9 +79,71 @@ export async function POST(request: Request) {
     }
 
     const parsedData = JSON.parse(jsonString.trim());
+
+    // Validar enlaces en el servidor y corregir enlaces rotos con alternativas seguras
+    if (parsedData.fuentes && Array.isArray(parsedData.fuentes)) {
+      const validatedFuentes = await Promise.all(
+        parsedData.fuentes.map(async (f: any) => {
+          const alive = await isUrlAlive(f.url);
+          if (!alive) {
+            // Reemplazar enlace roto con URL de búsqueda directa garantizada
+            const queryTerm = encodeURIComponent(query);
+            let fallbackUrl = `https://www.google.com/search?q=${encodeURIComponent(f.sitio + " " + query)}`;
+            
+            const lowerSitio = f.sitio.toLowerCase();
+            if (lowerSitio.includes('aliexpress')) {
+              fallbackUrl = `https://www.aliexpress.com/wholesale?SearchText=${queryTerm}`;
+            } else if (lowerSitio.includes('alibaba')) {
+              fallbackUrl = `https://www.alibaba.com/trade/search?SearchText=${queryTerm}`;
+            } else if (lowerSitio.includes('ebay')) {
+              fallbackUrl = `https://www.ebay.com/sch/i.html?_nkw=${queryTerm}`;
+            } else if (lowerSitio.includes('amazon')) {
+              fallbackUrl = `https://www.amazon.com/s?k=${queryTerm}`;
+            }
+            
+            return {
+              ...f,
+              url: fallbackUrl,
+              sitio: `${f.sitio} (Búsqueda Directa)`
+            };
+          }
+          return f;
+        })
+      );
+      parsedData.fuentes = validatedFuentes;
+    }
+
     return NextResponse.json(parsedData);
   } catch (error: any) {
     console.error('Error al investigar producto con Gemini:', error);
     return NextResponse.json({ error: error.message || 'Error al realizar la investigación con IA.' }, { status: 500 });
+  }
+}
+
+// Función auxiliar en el servidor para comprobar si un enlace está activo (evitar 404)
+async function isUrlAlive(url: string): Promise<boolean> {
+  if (!url || !url.startsWith('http')) return false;
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500); // Timeout rápido de 3.5 segundos para no colgar la consulta
+    
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    // Si da 404, definitivamente está muerto
+    if (res.status === 404) {
+      return false;
+    }
+    return true;
+  } catch (err) {
+    // Si hay error de red o timeout, lo marcamos como inactivo para usar el buscador de respaldo
+    return false;
   }
 }
