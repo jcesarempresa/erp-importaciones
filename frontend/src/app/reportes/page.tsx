@@ -633,10 +633,10 @@ export default function ReportesPage() {
 
   // ── Format helpers ───────────────────────────────────────────────────────────
   const fmt = (n: number) =>
+    "$ " +
     new Intl.NumberFormat("es-DO", {
-      style: "currency",
-      currency: "DOP",
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
     }).format(n);
   const pct = (n: number) => `${n.toFixed(1)}%`;
 
