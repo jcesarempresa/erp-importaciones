@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-2.5-flash',
       contents: [
         {
           role: 'user',
@@ -116,7 +116,30 @@ export async function POST(request: Request) {
     return NextResponse.json(parsedData);
   } catch (error: any) {
     console.error('Error al investigar producto con Gemini:', error);
-    return NextResponse.json({ error: error.message || 'Error al realizar la investigación con IA.' }, { status: 500 });
+    
+    let errMsg = error.message || 'Error al realizar la investigación con IA.';
+    
+    // Si el mensaje de error es un JSON de la API de Google, intentar parsearlo
+    try {
+      if (errMsg.startsWith('{') && errMsg.includes('"error"')) {
+        const parsed = JSON.parse(errMsg);
+        if (parsed.error?.code === 503 || parsed.error?.status === 'UNAVAILABLE') {
+          errMsg = "La Inteligencia Artificial de Google (Gemini) está temporalmente saturada debido a una alta demanda pública. Por favor, espera 5 segundos e intenta de nuevo.";
+        } else if (parsed.error?.code === 429) {
+          errMsg = "Se ha superado el límite de solicitudes por minuto permitido en tu cuenta de Gemini. Por favor, espera 30 segundos e intenta de nuevo.";
+        } else if (parsed.error?.message) {
+          errMsg = parsed.error.message;
+        }
+      } else if (errMsg.includes('503') || errMsg.includes('UNAVAILABLE')) {
+        errMsg = "La Inteligencia Artificial de Google (Gemini) está temporalmente saturada debido a una alta demanda pública. Por favor, espera 5 segundos e intenta de nuevo.";
+      } else if (errMsg.includes('429')) {
+        errMsg = "Se ha superado el límite de solicitudes de tu cuenta de Gemini. Por favor, espera 30 segundos e intenta de nuevo.";
+      }
+    } catch(e) {
+      // Ignorar error de parseo
+    }
+    
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
 
