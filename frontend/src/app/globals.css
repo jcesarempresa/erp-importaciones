@@ -90,7 +90,8 @@ body {
   body:has(#print-factura-root:not(:empty)) > *:not(#print-factura-root),
   body:has(#print-nota-entrega-root:not(:empty)) > *:not(#print-nota-entrega-root),
   body:has(#print-factura-cliente-root:not(:empty)) > *:not(#print-factura-cliente-root),
-  body:has(#print-recepcion-root:not(:empty)) > *:not(#print-recepcion-root) {
+  body:has(#print-recepcion-root:not(:empty)) > *:not(#print-recepcion-root),
+  body:has(#print-reporte-root:not(:empty)) > *:not(#print-reporte-root) {
     display: none !important;
   }
 
@@ -101,7 +102,7 @@ body {
     background-image: none !important;
   }
 
-  #print-cotizacion-root, #print-orden-root, #print-pedido-root, #print-factura-root, #print-nota-entrega-root, #print-factura-cliente-root, #print-recepcion-root {
+  #print-cotizacion-root, #print-orden-root, #print-pedido-root, #print-factura-root, #print-nota-entrega-root, #print-factura-cliente-root, #print-recepcion-root, #print-reporte-root {
     display: block !important;
     position: relative;
     top: 0; left: 0;
