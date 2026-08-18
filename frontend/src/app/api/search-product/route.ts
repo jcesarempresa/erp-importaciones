@@ -30,6 +30,9 @@ export async function POST(request: Request) {
       
       Producto: "${query}"
       
+      Debes buscar y listar obligatoriamente entre 5 y 10 fuentes reales y diferentes con los mejores precios del mercado actual. 
+      Ordena la lista de fuentes de la más económica a la más costosa.
+      
       Debes retornar obligatoriamente un objeto JSON con el siguiente formato estricto, sin bloques de código markdown (\`\`\`json) ni texto adicional:
       {
         "descripcion": "Descripción comercial limpia, atractiva y concisa del producto en español (ej. iPhone 15 Pro Max 256GB - Titanio Natural)",
@@ -37,15 +40,15 @@ export async function POST(request: Request) {
         "precioEstimado": 899.99,
         "fuentes": [
           {
-            "sitio": "Nombre del distribuidor o tienda (ej. Alibaba, Amazon)",
-            "precio": "Rango de precio o precio unitario listado (ej. $850 - $920)",
-            "url": "Enlace web EXACTO, completo y directo de la fuente o producto encontrado (ej. 'https://www.ebay.com/itm/123456789' o la URL larga de búsqueda específica de Alibaba, NUNCA un enlace genérico como 'https://www.ebay.com' o 'https://alibaba.com'). Utiliza las URLs de origen proporcionadas por los metadatos de búsqueda."
+            "sitio": "Nombre del distribuidor o tienda (ej. Alibaba, eBay, Back Market)",
+            "precio": "Rango de precio o precio unitario listado (ej. $850.00)",
+            "url": "URL DIRECTA Y COMPLETA del producto en esa tienda. Extrae el enlace real y exacto de los resultados de búsqueda de Google (grounding chunks). NUNCA inventes URLs y NUNCA uses enlaces genéricos a la página de inicio (como https://ebay.com). La URL debe ser real y llevarnos directamente a la oferta o página específica del artículo."
           }
         ]
       }
       
       Nota: En la propiedad 'precioEstimado', coloca solo el número decimal como un tipo number en JSON, representando el costo unitario promedio en USD.
-      Utiliza la herramienta de búsqueda de Google para encontrar información real, verídica y del presente año.
+      Utiliza la herramienta de búsqueda de Google para encontrar información real, verídica y del presente año. En caso de que no encuentres suficientes fuentes exactas, incluye al menos 5 enlaces a búsquedas directas de productos o categorías relevantes.
     `;
 
     const response = await ai.models.generateContent({
