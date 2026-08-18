@@ -47,6 +47,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #f1f5f9; /* slate-200 */
   transition: all 0.2s ease-in-out;
+  color-scheme: dark;
 }
 
 .glass-input:focus {
