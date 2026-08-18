@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const prompt = `
       Eres un asistente experto en compras e investigación de mercado internacional.
       Investiga precios actuales y especificaciones comerciales del siguiente producto en internet, 
-      enfocándote en precios de venta al mayor, distribuidores o mercados FOB/CIF (ej. Alibaba, Amazon Business, eBay o tiendas mayoristas especializadas):
+      enfocándote en precios de venta al mayor, distribuidores o mercados FOB/CIF (ej. Alibaba, AliExpress, Amazon, eBay o tiendas mayoristas especializadas en China, USA, Europa y todo el mundo):
       
       Producto: "${query}"
       
@@ -40,15 +40,20 @@ export async function POST(request: Request) {
         "precioEstimado": 899.99,
         "fuentes": [
           {
-            "sitio": "Nombre del distribuidor o tienda (ej. Alibaba, eBay, Back Market)",
-            "precio": "Rango de precio o precio unitario listado (ej. $850.00)",
-            "url": "URL DIRECTA Y COMPLETA del producto en esa tienda. Extrae el enlace real y exacto de los resultados de búsqueda de Google (grounding chunks). NUNCA inventes URLs y NUNCA uses enlaces genéricos a la página de inicio (como https://ebay.com). La URL debe ser real y llevarnos directamente a la oferta o página específica del artículo."
+            "sitio": "Nombre del distribuidor o tienda (ej. AliExpress (China), Alibaba (Mayorista), eBay (USA), Amazon (USA))",
+            "precio": "Rango de precio o precio unitario listado (ej. $150.00)",
+            "url": "URL PÚBLICA Y VERIFICADA. Prohibido usar enlaces de redirección interna de Google (como 'https://vertexaisearch.cloud.google.com/grounding-api-redirect/...'). Esos enlaces de redirigido de Google fallan con error 404. En su lugar, debes construir u obtener la URL pública real directa del producto, o en su defecto, una URL de búsqueda directa en esa tienda con los mejores términos para ese producto específico, por ejemplo:
+             - Para AliExpress: 'https://www.aliexpress.com/wholesale?SearchText=playstation+4+console'
+             - Para eBay: 'https://www.ebay.com/sch/i.html?_nkw=playstation+4+console+refurbished'
+             - Para Alibaba: 'https://www.alibaba.com/trade/search?SearchText=playstation+4+console'
+             - Para Amazon: 'https://www.amazon.com/s?k=playstation+4+console+renewed'
+            Asegúrate de formatear correctamente las URLs para que sean públicas, válidas y de acceso mundial."
           }
         ]
       }
       
       Nota: En la propiedad 'precioEstimado', coloca solo el número decimal como un tipo number en JSON, representando el costo unitario promedio en USD.
-      Utiliza la herramienta de búsqueda de Google para encontrar información real, verídica y del presente año. En caso de que no encuentres suficientes fuentes exactas, incluye al menos 5 enlaces a búsquedas directas de productos o categorías relevantes.
+      Utiliza la herramienta de búsqueda de Google para encontrar información real, verídica y del presente año. Incluye enlaces de fuentes de China, USA y globales que estén verificados y listos para hacer clic.
     `;
 
     const response = await ai.models.generateContent({
