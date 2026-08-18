@@ -143,7 +143,10 @@ async function exportPDF(
     margin: { left: 40, right: 40 },
   });
 
-  doc.save(filename.endsWith(".pdf") ? filename : filename + ".pdf");
+  // Open in new tab for print preview instead of downloading
+  const blob = doc.output("blob");
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
 }
 
 // ─── KPI Card ────────────────────────────────────────────────────────────────
