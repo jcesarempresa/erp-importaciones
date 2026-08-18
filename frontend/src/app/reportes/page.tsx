@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import PrintReporte, { ReporteColumna } from "@/components/PrintReporte";
 import {
   collection,
   getDocs,
@@ -103,51 +104,7 @@ async function exportExcel(
   XLSX.writeFile(wb, filename.endsWith(".xlsx") ? filename : filename + ".xlsx");
 }
 
-async function exportPDF(
-  columns: string[],
-  rows: (string | number)[][],
-  title: string,
-  filename: string
-) {
-  const { default: jsPDF } = await import("jspdf");
-  const { default: autoTable } = await import("jspdf-autotable");
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
 
-  // Title
-  doc.setFontSize(14);
-  doc.setTextColor(40);
-  doc.text(title, 40, 40);
-
-  // Date
-  doc.setFontSize(9);
-  doc.setTextColor(120);
-  doc.text(
-    `Generado: ${new Date().toLocaleDateString("es-DO", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })}`,
-    40,
-    58
-  );
-
-  autoTable(doc, {
-    head: [columns],
-    body: rows,
-    startY: 70,
-    styles: { fontSize: 8, cellPadding: 4 },
-    headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [245, 247, 250] },
-    margin: { left: 40, right: 40 },
-  });
-
-  // Open in new tab for print preview instead of downloading
-  const blob = doc.output("blob");
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank");
-}
 
 // ─── KPI Card ────────────────────────────────────────────────────────────────
 
@@ -283,6 +240,13 @@ export default function ReportesPage() {
 
   const [tab, setTab] = useState<TabId>("kpis");
   const [loading, setLoading] = useState(true);
+
+  // Print modal
+  const [printModal, setPrintModal] = useState<{
+    titulo: string;
+    columnas: ReporteColumna[];
+    filas: (string | number)[][];
+  } | null>(null);
 
   // Raw data
   const [ordenes, setOrdenes] = useState<OrdenCliente[]>([]);
@@ -752,17 +716,21 @@ export default function ReportesPage() {
                   )
                 }
                 onExportPDF={() =>
-                  exportPDF(
-                    ["Orden", "Cliente", "Producto", "Cant. Pendiente"],
-                    kpis.itemsListos.map((i) => [
+                  setPrintModal({
+                    titulo: t("Ítems Listos para Despachar", "Items Ready to Dispatch"),
+                    columnas: [
+                      { label: t("Orden","Order") },
+                      { label: t("Cliente","Client") },
+                      { label: t("Producto","Product") },
+                      { label: t("Cant. Pendiente","Pending Qty"), align: "right" },
+                    ],
+                    filas: kpis.itemsListos.map((i) => [
                       i.ordenId.slice(-8).toUpperCase(),
                       i.cliente,
                       i.descripcion,
                       i.pendiente,
                     ]),
-                    "Ítems Listos para Despachar",
-                    "items_listos_despachar"
-                  )
+                  })
                 }
               />
               <div className="glass-card overflow-x-auto">
@@ -833,9 +801,22 @@ export default function ReportesPage() {
               )
             }
             onExportPDF={() =>
-              exportPDF(
-                ["Orden","Cliente","Fecha","Estado","Ped.","Rec.","Entr.","P.Desp","P.Lleg","Facturado","Saldo"],
-                ordenesRows.map((r) => [
+              setPrintModal({
+                titulo: t("Seguimiento de Órdenes de Cliente", "Customer Order Tracking"),
+                columnas: [
+                  { label: t("Orden","Order") },
+                  { label: t("Cliente","Client") },
+                  { label: t("Fecha","Date") },
+                  { label: t("Estado","Status") },
+                  { label: t("Ped.","Ord."), align: "right" },
+                  { label: t("Rec.","Rec."), align: "right" },
+                  { label: t("Entr.","Del."), align: "right" },
+                  { label: t("P.Desp","P.Ship"), align: "right" },
+                  { label: t("P.Lleg","P.Arr."), align: "right" },
+                  { label: t("Facturado","Invoiced"), align: "right" },
+                  { label: t("Saldo CxC","CxC Bal."), align: "right" },
+                ],
+                filas: ordenesRows.map((r) => [
                   r.orden.id.slice(-8).toUpperCase(),
                   r.orden.clienteNombre,
                   r.orden.fecha,
@@ -848,9 +829,7 @@ export default function ReportesPage() {
                   r.totalFacturadoOrden,
                   r.saldoPendienteOrden,
                 ]),
-                "Seguimiento de Órdenes de Cliente",
-                "ordenes_seguimiento"
-              )
+              })
             }
           />
           <div className="glass-card overflow-x-auto">
@@ -1075,9 +1054,18 @@ export default function ReportesPage() {
                 )
               }
               onExportPDF={() =>
-                exportPDF(
-                  ["Factura", "Cliente", "Fecha", "Vencimiento", "Estado", "Monto", "Saldo"],
-                  cobrosData.facturas
+                setPrintModal({
+                  titulo: t("Detalle de Facturas – CxC", "Invoice Detail – Receivables"),
+                  columnas: [
+                    { label: t("Factura","Invoice") },
+                    { label: t("Cliente","Client") },
+                    { label: t("Fecha","Date") },
+                    { label: t("Vencimiento","Due Date") },
+                    { label: t("Estado","Status") },
+                    { label: t("Monto","Amount"), align: "right" },
+                    { label: t("Saldo","Balance"), align: "right" },
+                  ],
+                  filas: cobrosData.facturas
                     .filter((f) => f.estado !== "anulada")
                     .map((f) => [
                       f.id.slice(-8).toUpperCase(),
@@ -1088,9 +1076,7 @@ export default function ReportesPage() {
                       f.monto,
                       f.saldoPendiente,
                     ]),
-                  "Detalle de Facturas – CxC",
-                  "facturas_cxc"
-                )
+                })
               }
             />
             <div className="glass-card overflow-x-auto">
@@ -1175,9 +1161,18 @@ export default function ReportesPage() {
               )
             }
             onExportPDF={() =>
-              exportPDF(
-                ["Orden", "Cliente", "Fecha", "Ingresos", "Costo", "Utilidad", "Margen %"],
-                rentabilidadRows.map((r) => [
+              setPrintModal({
+                titulo: t("Rentabilidad por Orden", "Profitability by Order"),
+                columnas: [
+                  { label: t("Orden","Order") },
+                  { label: t("Cliente","Client") },
+                  { label: t("Fecha","Date") },
+                  { label: t("Ingresos","Revenue"), align: "right" },
+                  { label: t("Costo","Cost"), align: "right" },
+                  { label: t("Utilidad","Profit"), align: "right" },
+                  { label: t("Margen %","Margin %"), align: "right" },
+                ],
+                filas: rentabilidadRows.map((r) => [
                   r.id.slice(-8).toUpperCase(),
                   r.cliente,
                   r.fecha,
@@ -1186,9 +1181,7 @@ export default function ReportesPage() {
                   r.utilidad,
                   r.margen.toFixed(2) + "%",
                 ]),
-                "Rentabilidad por Orden",
-                "rentabilidad_ordenes"
-              )
+              })
             }
           />
           {/* Totals bar */}
@@ -1299,9 +1292,18 @@ export default function ReportesPage() {
               )
             }
             onExportPDF={() =>
-              exportPDF(
-                ["Cliente", "Órdenes", "Total Pedido", "Facturado", "Cobrado", "Saldo CxC", "Uds. Pend."],
-                clientesRows.map((c) => [
+              setPrintModal({
+                titulo: t("Análisis por Cliente", "Client Analysis"),
+                columnas: [
+                  { label: t("Cliente","Client") },
+                  { label: t("Órdenes","Orders"), align: "right" },
+                  { label: t("Total Pedido","Total Ordered"), align: "right" },
+                  { label: t("Facturado","Invoiced"), align: "right" },
+                  { label: t("Cobrado","Collected"), align: "right" },
+                  { label: t("Saldo CxC","CxC Balance"), align: "right" },
+                  { label: t("Uds. Pend.","Pend. Units"), align: "right" },
+                ],
+                filas: clientesRows.map((c) => [
                   c.nombre,
                   c.ordenes,
                   c.totalPedido,
@@ -1310,9 +1312,7 @@ export default function ReportesPage() {
                   c.cxcBalance,
                   c.unidadesPendientes,
                 ]),
-                "Análisis por Cliente",
-                "clientes_analisis"
-              )
+              })
             }
           />
           <div className="glass-card overflow-x-auto">
@@ -1396,9 +1396,18 @@ export default function ReportesPage() {
               )
             }
             onExportPDF={() =>
-              exportPDF(
-                ["Producto", "Ped.", "Entr.", "Pend.", "Ingresos", "Costo", "Margen %"],
-                productosRows.map((p) => [
+              setPrintModal({
+                titulo: t("Análisis por Producto", "Product Analysis"),
+                columnas: [
+                  { label: t("Producto","Product") },
+                  { label: t("Ped.","Ord."), align: "right" },
+                  { label: t("Entr.","Del."), align: "right" },
+                  { label: t("Pend.","Pend."), align: "right" },
+                  { label: t("Ingresos","Revenue"), align: "right" },
+                  { label: t("Costo","Cost"), align: "right" },
+                  { label: t("Margen %","Margin %"), align: "right" },
+                ],
+                filas: productosRows.map((p) => [
                   p.descripcion,
                   p.unidadesPedidas,
                   p.unidadesEntregadas,
@@ -1409,9 +1418,7 @@ export default function ReportesPage() {
                     ? (((p.ingresos - p.costo) / p.ingresos) * 100).toFixed(2) + "%"
                     : "0%",
                 ]),
-                "Análisis por Producto",
-                "productos_analisis"
-              )
+              })
             }
           />
           <div className="glass-card overflow-x-auto">
@@ -1514,9 +1521,18 @@ export default function ReportesPage() {
               )
             }
             onExportPDF={() =>
-              exportPDF(
-                ["Proveedor", "Órdenes", "Uds. Ped.", "Uds. Rec.", "Cumplim. %", "Costo Total", "Saldo CxP"],
-                proveedoresRows.map((p) => [
+              setPrintModal({
+                titulo: t("Análisis por Proveedor", "Supplier Analysis"),
+                columnas: [
+                  { label: t("Proveedor","Supplier") },
+                  { label: t("Órdenes","Orders"), align: "right" },
+                  { label: t("Uds. Ped.","Units Ord."), align: "right" },
+                  { label: t("Uds. Rec.","Units Rec."), align: "right" },
+                  { label: t("Cumplim. %","Fulfill. %"), align: "right" },
+                  { label: t("Costo Total","Total Cost"), align: "right" },
+                  { label: t("Saldo CxP","CxP Bal."), align: "right" },
+                ],
+                filas: proveedoresRows.map((p) => [
                   p.nombre,
                   p.ordenes,
                   p.unidadesPedidas,
@@ -1527,9 +1543,7 @@ export default function ReportesPage() {
                   p.costoTotal,
                   p.cxpBalance,
                 ]),
-                "Análisis por Proveedor",
-                "proveedores_analisis"
-              )
+              })
             }
           />
           <div className="glass-card overflow-x-auto">
@@ -1604,6 +1618,17 @@ export default function ReportesPage() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* ── Print Preview Modal ──────────────────────────────────────────────── */}
+      {printModal && (
+        <PrintReporte
+          titulo={printModal.titulo}
+          columnas={printModal.columnas}
+          filas={printModal.filas}
+          language={language}
+          onClose={() => setPrintModal(null)}
+        />
       )}
     </div>
   );
