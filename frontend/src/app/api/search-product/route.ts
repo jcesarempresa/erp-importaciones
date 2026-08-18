@@ -39,7 +39,7 @@ export async function POST(request: Request) {
           {
             "sitio": "Nombre del distribuidor o tienda (ej. Alibaba, Amazon)",
             "precio": "Rango de precio o precio unitario listado (ej. $850 - $920)",
-            "url": "Enlace del sitio web de referencia o búsqueda"
+            "url": "Enlace web EXACTO, completo y directo de la fuente o producto encontrado (ej. 'https://www.ebay.com/itm/123456789' o la URL larga de búsqueda específica de Alibaba, NUNCA un enlace genérico como 'https://www.ebay.com' o 'https://alibaba.com'). Utiliza las URLs de origen proporcionadas por los metadatos de búsqueda."
           }
         ]
       }

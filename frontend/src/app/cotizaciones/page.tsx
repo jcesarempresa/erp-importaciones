@@ -1678,26 +1678,38 @@ export default function CotizacionesPage() {
                     <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-4 space-y-3">
                       <div>
                         <div className="text-[10px] font-bold text-slate-500 uppercase">{language === "es" ? "Descripción Sugerida" : "Suggested Description"}</div>
-                        <div className="text-sm font-semibold text-slate-200 mt-0.5">{aiSearchResult.descripcion}</div>
+                        <input
+                          type="text"
+                          value={aiSearchResult.descripcion || ""}
+                          onChange={(e) => setAiSearchResult({ ...aiSearchResult, descripcion: e.target.value })}
+                          className="glass-input w-full px-3 py-2 rounded-xl text-sm font-semibold text-slate-200 mt-1"
+                        />
                       </div>
 
                       {(aiSearchResult.precioEstimado !== undefined) && (
                         <div>
                           <div className="text-[10px] font-bold text-slate-500 uppercase">{language === "es" ? "Costo Unitario Sugerido ($ USD)" : "Suggested Unit Cost ($ USD)"}</div>
-                          <div className="text-base font-extrabold text-emerald-400 mt-0.5">
-                            ${(aiSearchResult.precioEstimado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          <div className="relative mt-1">
+                            <span className="absolute left-3 top-2 text-emerald-400 font-bold text-sm">$</span>
+                            <input
+                              type="number"
+                              value={aiSearchResult.precioEstimado}
+                              onChange={(e) => setAiSearchResult({ ...aiSearchResult, precioEstimado: Number(e.target.value) })}
+                              className="glass-input w-full pl-7 pr-3 py-2 rounded-xl text-sm font-extrabold text-emerald-450"
+                              step="0.01"
+                            />
                           </div>
                         </div>
                       )}
 
-                      {aiSearchResult.detalles && (
-                        <div>
-                          <div className="text-[10px] font-bold text-slate-500 uppercase">{language === "es" ? "Especificaciones y Detalles" : "Specs and Details"}</div>
-                          <div className="text-xs text-slate-400 mt-1 whitespace-pre-line bg-slate-900/30 p-2 rounded-lg leading-relaxed">
-                            {aiSearchResult.detalles}
-                          </div>
-                        </div>
-                      )}
+                      <div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase">{language === "es" ? "Especificaciones y Detalles" : "Specs and Details"}</div>
+                        <textarea
+                          value={aiSearchResult.detalles || ""}
+                          onChange={(e) => setAiSearchResult({ ...aiSearchResult, detalles: e.target.value })}
+                          className="glass-input w-full px-3 py-2 rounded-xl text-xs min-h-[100px] leading-relaxed mt-1"
+                        />
+                      </div>
 
                       {aiSearchResult.fuentes && aiSearchResult.fuentes.length > 0 && (
                         <div>
