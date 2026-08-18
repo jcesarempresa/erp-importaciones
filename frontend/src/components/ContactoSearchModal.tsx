@@ -89,7 +89,7 @@ export default function ContactoSearchModal({ tipo, items, selected, onSelect, o
       {/* Modal */}
       {open && (
         <div className="fixed inset-0 z-[60] flex items-start justify-center pt-24 bg-slate-950/80 backdrop-blur-sm px-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center gap-3 p-4 border-b border-slate-800">
               <Icon className="h-5 w-5 text-indigo-400 shrink-0" />

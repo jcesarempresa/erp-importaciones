@@ -545,7 +545,7 @@ export default function PedidosProveedorPage() {
       {/* Modal / Formulario Nuevo Pedido (Estilo Facturación) */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-5xl rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200 border border-slate-800/80 shadow-2xl">
+          <div className="glass-panel w-full max-w-5xl rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200 border border-slate-800/80 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-800/60 pb-3">
               <h3 className="text-md font-bold text-slate-200 flex items-center gap-2">
                 <Compass className="h-5 w-5 text-indigo-400" /> 

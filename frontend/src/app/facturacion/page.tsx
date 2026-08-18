@@ -642,7 +642,7 @@ export default function FacturacionPage() {
       {/* Modal Registrar Pago / Abono (Aero Glassmorphism) */}
       {modalOpen && selectedFactura && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200">
+          <div className="glass-panel w-full max-w-md rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-800/60 pb-3">
               <h3 className="text-sm font-bold text-slate-200 flex items-center gap-1.5">
                 <Receipt className="h-4 w-4 text-indigo-400" /> {language === "es" ? "Registrar Abono / Pago" : "Register Payment / Credit"}
@@ -878,7 +878,7 @@ export default function FacturacionPage() {
       {/* Modal Facturar Despachos Consolidados (Aero Glassmorphism) */}
       {facturarModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-lg rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200">
+          <div className="glass-panel w-full max-w-lg rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-800/60 pb-3">
               <h3 className="text-sm font-bold text-slate-200 flex items-center gap-1.5">
                 <Receipt className="h-4 w-4 text-indigo-400" /> {language === "es" ? "Facturar Notas de Entrega / Despachos" : "Invoice Delivery Notes / Shipments"}

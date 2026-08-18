@@ -43,7 +43,7 @@ export default function PrintOrdenCliente({ orden, empresa, onClose, language, c
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-start justify-center p-4 pt-8 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl shadow-2xl">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
           <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
             <Printer className="w-4 h-4 text-indigo-400" />

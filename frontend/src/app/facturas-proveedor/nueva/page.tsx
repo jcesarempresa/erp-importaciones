@@ -275,7 +275,7 @@ export default function NuevaFacturaProveedorPage() {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto custom-scrollbar">
-      <div className="glass-panel w-full max-w-6xl rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200 border border-slate-800 shadow-2xl bg-slate-950/90 my-auto">
+      <div className="glass-panel w-full max-w-6xl rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200 border border-slate-800 shadow-2xl bg-slate-950/90 my-auto max-h-[90vh] overflow-y-auto">
         
         {/* Encabezado Modal Estándar ERP */}
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
@@ -695,7 +695,7 @@ export default function NuevaFacturaProveedorPage() {
       {/* Modal Agregar Proveedor Rápido */}
       {showNuevoProveedor && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200">
+          <div className="glass-panel w-full max-w-md rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="border-b border-slate-800/60 pb-3 flex justify-between items-center">
               <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-indigo-400" /> Nuevo Proveedor

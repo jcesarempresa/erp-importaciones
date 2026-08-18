@@ -318,7 +318,7 @@ export default function ContactosPage() {
       {/* Modal de Creación / Edición */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-lg rounded-2xl border border-slate-800/80 p-6 space-y-6 shadow-2xl">
+          <div className="glass-panel w-full max-w-lg rounded-2xl border border-slate-800/80 p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -419,7 +419,7 @@ export default function ContactosPage() {
       {/* Modal de Confirmación de Eliminación */}
       {deletingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl border border-rose-900/50 p-6 space-y-5 shadow-2xl">
+          <div className="glass-panel w-full max-w-md rounded-2xl border border-rose-900/50 p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-start gap-4">
               <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 shrink-0">
                 <ShieldAlert className="h-6 w-6 text-rose-400" />

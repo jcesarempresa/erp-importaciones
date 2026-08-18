@@ -462,7 +462,7 @@ export default function FinancieroPage({ params }: { params: Promise<{ id: strin
       {/* Modal Nuevo Abono */}
       {showAbonoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <form onSubmit={handleCrearAbono} className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-slate-800 shadow-2xl animate-in zoom-in-95">
+          <form onSubmit={handleCrearAbono} className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-slate-800 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2"><CreditCard className="h-5 w-5 text-emerald-400"/> Registrar Pago/Abono</h3>
             <div className="space-y-4">
               <div>
@@ -498,7 +498,7 @@ export default function FinancieroPage({ params }: { params: Promise<{ id: strin
       {/* Modal Nuevo Gasto */}
       {showGastoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <form onSubmit={handleCrearGasto} className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-slate-800 shadow-2xl animate-in zoom-in-95">
+          <form onSubmit={handleCrearGasto} className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-slate-800 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2"><Truck className="h-5 w-5 text-orange-400"/> Registrar Gasto Extra</h3>
             <div className="space-y-4">
               <div>

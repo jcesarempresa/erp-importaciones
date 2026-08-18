@@ -760,7 +760,7 @@ function OrdenesClienteContent() {
       {/* Modal / Formulario Nueva Orden (Estilo Facturación) */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-5xl rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200 border border-slate-800/80 shadow-2xl">
+          <div className="glass-panel w-full max-w-5xl rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200 border border-slate-800/80 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-800/60 pb-3">
               <h3 className="text-md font-bold text-slate-200 flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-indigo-400" /> 
@@ -1355,7 +1355,7 @@ function OrdenesClienteContent() {
       {/* Modal Quick Proveedor */}
       {showQuickProvForm && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
               <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-indigo-400" />
@@ -1423,7 +1423,7 @@ function OrdenesClienteContent() {
       {/* Modal Importar Presupuesto */}
       {showImportModal && (
         <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
               <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
                 <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
