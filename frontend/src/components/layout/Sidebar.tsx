@@ -15,7 +15,8 @@ import {
   UploadCloud,
   Package,
   Inbox,
-  Landmark
+  Landmark,
+  BarChart2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/context/LanguageContext";
@@ -32,6 +33,7 @@ const menuItems = [
   { translationKey: "menu.deliveries", href: "/despachos", icon: PackageCheck },
   { translationKey: "menu.billing", href: "/facturacion", icon: Receipt },
   { translationKey: "menu.ap", href: "/facturas-proveedor", icon: Landmark },
+  { translationKey: "menu.reports", href: "/reportes", icon: BarChart2 },
   { translationKey: "menu.importHistory", href: "/importar", icon: UploadCloud },
   { translationKey: "menu.config", href: "/configuracion", icon: Settings },
 ];
