@@ -4,7 +4,40 @@ import { setDefaultResultOrder } from 'node:dns';
 
 setDefaultResultOrder('ipv4first');
 
-export const maxDuration = 60;
+export const maxDuration = 120;
+
+// Helper: esperar N milisegundos
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper: llamar a Gemini con reintentos automáticos ante errores 429/503
+async function callGeminiWithRetry(ai: any, prompt: string, maxRetries = 4): Promise<string> {
+  const delays = [3000, 6000, 12000, 20000]; // Esperas entre reintentos: 3s, 6s, 12s, 20s
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: { tools: [{ googleSearch: {} }] }
+      });
+      return response.text || '';
+    } catch (err: any) {
+      const msg = err?.message || '';
+      const isRetryable = msg.includes('503') || msg.includes('UNAVAILABLE') ||
+                          msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') ||
+                          msg.includes('high demand');
+
+      if (isRetryable && attempt < maxRetries) {
+        console.log(`Gemini error (intento ${attempt + 1}/${maxRetries + 1}), reintentando en ${delays[attempt] / 1000}s...`);
+        await sleep(delays[attempt]);
+        continue;
+      }
+      // Si no es reintentable o agotamos los intentos, relanzar
+      throw err;
+    }
+  }
+  throw new Error('Se agotaron los reintentos de Gemini.');
+}
 
 export async function POST(request: Request) {
   try {
@@ -56,20 +89,8 @@ export async function POST(request: Request) {
       Utiliza la herramienta de búsqueda de Google para encontrar información real, verídica y del presente año. Incluye enlaces de fuentes de China, USA y globales que estén verificados y listos para hacer clic.
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }]
-        }
-      ],
-      config: {
-        tools: [{ googleSearch: {} }]
-      }
-    });
-
-    const responseText = response.text || '';
+    // Llamar a Gemini con reintentos automáticos ante saturación
+    const responseText = await callGeminiWithRetry(ai, prompt);
     
     let jsonString = responseText.trim();
     if (jsonString.includes('```json')) {
@@ -116,30 +137,10 @@ export async function POST(request: Request) {
     return NextResponse.json(parsedData);
   } catch (error: any) {
     console.error('Error al investigar producto con Gemini:', error);
-    
-    let errMsg = error.message || 'Error al realizar la investigación con IA.';
-    
-    // Si el mensaje de error es un JSON de la API de Google, intentar parsearlo
-    try {
-      if (errMsg.startsWith('{') && errMsg.includes('"error"')) {
-        const parsed = JSON.parse(errMsg);
-        if (parsed.error?.code === 503 || parsed.error?.status === 'UNAVAILABLE') {
-          errMsg = "La Inteligencia Artificial de Google (Gemini) está temporalmente saturada debido a una alta demanda pública. Por favor, espera 5 segundos e intenta de nuevo.";
-        } else if (parsed.error?.code === 429) {
-          errMsg = "Se ha superado el límite de solicitudes por minuto permitido en tu cuenta de Gemini. Por favor, espera 30 segundos e intenta de nuevo.";
-        } else if (parsed.error?.message) {
-          errMsg = parsed.error.message;
-        }
-      } else if (errMsg.includes('503') || errMsg.includes('UNAVAILABLE')) {
-        errMsg = "La Inteligencia Artificial de Google (Gemini) está temporalmente saturada debido a una alta demanda pública. Por favor, espera 5 segundos e intenta de nuevo.";
-      } else if (errMsg.includes('429')) {
-        errMsg = "Se ha superado el límite de solicitudes de tu cuenta de Gemini. Por favor, espera 30 segundos e intenta de nuevo.";
-      }
-    } catch(e) {
-      // Ignorar error de parseo
-    }
-    
-    return NextResponse.json({ error: errMsg }, { status: 500 });
+    return NextResponse.json(
+      { error: 'No se pudo obtener respuesta de la IA después de varios intentos. Por favor intenta de nuevo en un momento.' },
+      { status: 500 }
+    );
   }
 }
 
