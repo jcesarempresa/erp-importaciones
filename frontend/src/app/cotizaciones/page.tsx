@@ -1328,22 +1328,32 @@ export default function CotizacionesPage() {
                           className="glass-input w-full md:w-10 shrink-0 px-1 py-2 rounded-lg text-sm text-center font-mono"
                           title="Posición / Item No."
                         />
-                        <ProductoAutocomplete
-                          value={item.descripcion}
-                          onChange={(val) => handleFormItemChange(index, "descripcion", val)}
-                          onSelect={(prod) => {
-                            handleFormItemChange(index, "sku", prod.sku);
-                            handleFormItemChange(index, "descripcion", prod.descripcion);
-                            if (prod.precioUnitario != null) {
-                              handleFormItemChange(index, "precioUnitario", prod.precioUnitario);
-                            }
-                          }}
-                          historico={historicoProductos}
-                          campo="descripcion"
-                          placeholder={language === "es" ? "Descripción del producto" : "Product description"}
-                          containerClassName="w-full md:w-auto md:flex-1"
-                          className="glass-input w-full px-2 py-2 rounded-lg text-sm"
-                        />
+                        <div className="relative w-full md:w-auto md:flex-1">
+                          <ProductoAutocomplete
+                            value={item.descripcion}
+                            onChange={(val) => handleFormItemChange(index, "descripcion", val)}
+                            onSelect={(prod) => {
+                              handleFormItemChange(index, "sku", prod.sku);
+                              handleFormItemChange(index, "descripcion", prod.descripcion);
+                              if (prod.precioUnitario != null) {
+                                handleFormItemChange(index, "precioUnitario", prod.precioUnitario);
+                              }
+                            }}
+                            historico={historicoProductos}
+                            campo="descripcion"
+                            placeholder={language === "es" ? "Descripción del producto" : "Product description"}
+                            className="glass-input w-full pl-2 pr-28 py-2 rounded-lg text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleOpenSearchModal(index)}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-500/40 hover:border-indigo-400 rounded-lg text-[10px] font-bold text-indigo-200 transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+                            title={language === "es" ? "Investigar con IA (Gemini)" : "Investigate with AI (Gemini)"}
+                          >
+                            <span className="animate-pulse">✨</span>
+                            <span>{language === "es" ? "Buscar con IA" : "AI Sourcing"}</span>
+                          </button>
+                        </div>
                         <input
                           type="text"
                           placeholder={language === "es" ? "Modelo" : "Model"}
@@ -1409,14 +1419,7 @@ export default function CotizacionesPage() {
                         >
                           <FileText className="h-4 w-4" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenSearchModal(index)}
-                          className="p-2 rounded-lg text-slate-500 hover:text-sky-400 hover:bg-sky-500/10 transition-colors cursor-pointer shrink-0"
-                          title={language === "es" ? "Investigar con IA (Gemini)" : "Investigate with AI (Gemini)"}
-                        >
-                          <Search className="h-4 w-4" />
-                        </button>
+
                         {formItems.length > 1 && (
                           <button
                             type="button"
