@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/layout/Sidebar";
-import Header from "@/components/layout/Header";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { AuthProvider } from "@/context/AuthContext";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,18 +30,13 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-slate-50/50">
+      <body className="min-h-full bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white">
         <LanguageProvider>
-          {/* Layout Estilo Aero Dashboard */}
-          <div className="relative min-h-screen">
-            <Sidebar />
-            <Header />
-            <main className="pl-80 pt-40 min-h-screen">
-              <div className="p-8 max-w-7xl mx-auto">
-                {children}
-              </div>
-            </main>
-          </div>
+          <AuthProvider>
+            <AuthGuard>
+              {children}
+            </AuthGuard>
+          </AuthProvider>
         </LanguageProvider>
       </body>
     </html>

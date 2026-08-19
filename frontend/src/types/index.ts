@@ -288,4 +288,34 @@ export interface AbonoCliente {
   createdAt?: string;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Usuarios y Seguridad (RBAC)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type RolUsuario = 'master' | 'admin' | 'standard';
+
+export interface ModuloPermiso {
+  key: string;
+  ruta: string;
+  nombreEs: string;
+  nombreEn: string;
+  descripcion: string;
+}
+
+export interface Usuario {
+  id: string; // Firebase Auth UID o ID de documento
+  email: string;
+  nombre: string;
+  apellido?: string;
+  rol: RolUsuario;
+  permisos: string[]; // Rutas autorizadas, ej: ["/", "/cotizaciones", "/ordenes-cliente", ...]
+  activo: boolean;
+  telefono?: string;
+  cargo?: string;
+  avatarUrl?: string;
+  ultimoAcceso?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 

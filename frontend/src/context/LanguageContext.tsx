@@ -29,6 +29,7 @@ const translations: Record<Language, Record<string, string>> = {
     "menu.warehouse": "Almacén",
     "menu.importHistory": "Importar Historial",
     "menu.customerRequests": "Pedidos de Clientes",
+    "menu.users": "Usuarios y Permisos",
     "menu.config": "Configuración",
 
     // General
@@ -113,6 +114,7 @@ const translations: Record<Language, Record<string, string>> = {
     "menu.warehouse": "Warehouse",
     "menu.importHistory": "Import History",
     "menu.customerRequests": "Customer Requests",
+    "menu.users": "Users & Permissions",
     "menu.config": "Configuration",
 
     // General
