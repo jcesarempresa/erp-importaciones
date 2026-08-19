@@ -11,6 +11,7 @@ import {
   obtenerUsuarios,
   guardarUsuario,
   actualizarUsuario,
+  cambiarPasswordUsuario,
   cambiarEstadoUsuario,
   eliminarUsuario,
 } from "@/lib/api/usuarios";
@@ -35,13 +36,13 @@ import {
   X,
   Eye,
   EyeOff,
-  Send,
   Power,
   Shield,
+  User,
 } from "lucide-react";
 
 export default function UsuariosPage() {
-  const { usuario: currentUser, isMaster, isAdmin, enviarRecuperacionPassword } = useAuth();
+  const { usuario: currentUser, isMaster, isAdmin } = useAuth();
   const { language } = useTranslation();
   const t = (es: string, en: string) => (language === "es" ? es : en);
 
@@ -54,16 +55,17 @@ export default function UsuariosPage() {
   const [modalUsuario, setModalUsuario] = useState(false);
   const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null);
 
-  // Modal Cambiar Password
+  // Modal Cambiar Password Directo
   const [modalPassword, setModalPassword] = useState(false);
   const [usuarioPassword, setUsuarioPassword] = useState<Usuario | null>(null);
   const [nuevoPassword, setNuevoPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassModal, setShowPassModal] = useState(false);
   const [passLoading, setPassLoading] = useState(false);
   const [passMessage, setPassMessage] = useState<{ tipo: "success" | "error"; texto: string } | null>(null);
 
   // Formulario Usuario State
   const [formData, setFormData] = useState({
+    username: "",
     nombre: "",
     apellido: "",
     email: "",
@@ -77,6 +79,7 @@ export default function UsuariosPage() {
 
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
+  const [showFormPassword, setShowFormPassword] = useState(false);
 
   const cargarLista = async () => {
     setLoading(true);
@@ -97,6 +100,7 @@ export default function UsuariosPage() {
   const abrirModalCrear = () => {
     setUsuarioEditando(null);
     setFormData({
+      username: "",
       nombre: "",
       apellido: "",
       email: "",
@@ -114,14 +118,15 @@ export default function UsuariosPage() {
   const abrirModalEditar = (u: Usuario) => {
     setUsuarioEditando(u);
     setFormData({
+      username: u.username || u.email?.split("@")[0] || "",
       nombre: u.nombre,
       apellido: u.apellido || "",
-      email: u.email,
+      email: u.email || "",
       cargo: u.cargo || "",
       telefono: u.telefono || "",
       rol: u.rol,
       permisos: u.permisos || getPermisosPorDefecto(u.rol),
-      password: "",
+      password: u.password || "",
       activo: u.activo,
     });
     setFormError(null);
@@ -163,13 +168,20 @@ export default function UsuariosPage() {
     e.preventDefault();
     setFormError(null);
 
-    if (!formData.nombre.trim() || !formData.email.trim()) {
-      setFormError("El nombre y el correo electrónico son obligatorios.");
+    const cleanUser = formData.username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "");
+
+    if (!cleanUser) {
+      setFormError("El nombre de usuario es obligatorio (ej. admin, julio, carlos).");
       return;
     }
 
-    if (!usuarioEditando && (!formData.password || formData.password.length < 6)) {
-      setFormError("La contraseña inicial debe tener al menos 6 caracteres.");
+    if (!formData.nombre.trim()) {
+      setFormError("El nombre completo es obligatorio.");
+      return;
+    }
+
+    if (!usuarioEditando && (!formData.password || formData.password.length < 4)) {
+      setFormError("La contraseña inicial debe tener al menos 4 caracteres.");
       return;
     }
 
@@ -179,24 +191,39 @@ export default function UsuariosPage() {
       return;
     }
 
+    // Verificar si el username ya está en uso por otro usuario
+    const existente = usuarios.find(
+      (u) =>
+        u.username?.toLowerCase() === cleanUser &&
+        (!usuarioEditando || u.id !== usuarioEditando.id)
+    );
+    if (existente) {
+      setFormError(`El nombre de usuario "${cleanUser}" ya está en uso. Elige otro.`);
+      return;
+    }
+
     setFormLoading(true);
     try {
       if (usuarioEditando) {
         // Actualizar usuario existente
         await actualizarUsuario(usuarioEditando.id, {
+          username: cleanUser,
           nombre: formData.nombre,
           apellido: formData.apellido,
-          email: formData.email,
+          email: formData.email || `${cleanUser}@maximport.local`,
           cargo: formData.cargo,
           telefono: formData.telefono,
           rol: formData.rol,
           permisos: formData.rol === "standard" ? formData.permisos : getPermisosPorDefecto(formData.rol),
           activo: formData.activo,
+          ...(formData.password ? { password: formData.password } : {}),
         });
       } else {
-        // Crear nuevo usuario (se usa un ID generado a partir del timestamp o email)
+        // Crear nuevo usuario
         const newId = "usr_" + Date.now();
         await guardarUsuario(newId, {
+          username: cleanUser,
+          password: formData.password,
           nombre: formData.nombre,
           apellido: formData.apellido,
           email: formData.email,
@@ -206,13 +233,6 @@ export default function UsuariosPage() {
           permisos: formData.rol === "standard" ? formData.permisos : getPermisosPorDefecto(formData.rol),
           activo: formData.activo,
         });
-
-        // Enviar correo de configuración de contraseña si se proporcionó email
-        try {
-          await enviarRecuperacionPassword(formData.email);
-        } catch {
-          // Si falla Firebase Auth (e.g. no existe en Auth aún), se continúa normalmente
-        }
       }
 
       setModalUsuario(false);
@@ -227,7 +247,6 @@ export default function UsuariosPage() {
   };
 
   const handleToggleEstado = async (u: Usuario) => {
-    // Protección: Nadie puede desactivar a un Master a menos que sea otro Master y no a sí mismo
     if (u.rol === "master" && u.id === currentUser?.id) {
       alert("No puedes desactivar tu propia cuenta Master.");
       return;
@@ -256,7 +275,7 @@ export default function UsuariosPage() {
       return;
     }
 
-    const confirmar = confirm(`¿Estás seguro de que deseas eliminar permanentemente al usuario ${u.nombre} (${u.email})?`);
+    const confirmar = confirm(`¿Estás seguro de que deseas eliminar permanentemente al usuario ${u.nombre} (@${u.username})?`);
     if (!confirmar) return;
 
     try {
@@ -268,23 +287,37 @@ export default function UsuariosPage() {
     }
   };
 
-  const handleEnviarResetEmail = async () => {
+  const handleGuardarNuevaPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!usuarioPassword) return;
+
+    if (!nuevoPassword || nuevoPassword.length < 4) {
+      setPassMessage({
+        tipo: "error",
+        texto: "La contraseña debe tener al menos 4 caracteres.",
+      });
+      return;
+    }
+
     setPassLoading(true);
     setPassMessage(null);
 
     try {
-      await enviarRecuperacionPassword(usuarioPassword.email);
+      await cambiarPasswordUsuario(usuarioPassword.id, nuevoPassword);
       setPassMessage({
         tipo: "success",
-        texto: `Se ha enviado un correo de recuperación a ${usuarioPassword.email}. El usuario podrá crear su nueva contraseña desde el enlace.`,
+        texto: `¡Contraseña actualizada exitosamente para @${usuarioPassword.username}! Ahora puede iniciar sesión con esta nueva clave.`,
       });
+      await cargarLista();
+      setTimeout(() => {
+        setModalPassword(false);
+      }, 1500);
     } catch (err: unknown) {
-      console.error("Error al enviar reset:", err);
+      console.error("Error al cambiar contraseña:", err);
       const e = err as { message?: string };
       setPassMessage({
         tipo: "error",
-        texto: e.message || "No se pudo enviar el correo de recuperación.",
+        texto: e.message || "Error al actualizar la contraseña.",
       });
     } finally {
       setPassLoading(false);
@@ -293,10 +326,13 @@ export default function UsuariosPage() {
 
   // Filtrado de usuarios
   const usuariosFiltrados = usuarios.filter((u) => {
-    const cumpleTexto =
-      u.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      u.email.toLowerCase().includes(busqueda.toLowerCase()) ||
-      (u.cargo && u.cargo.toLowerCase().includes(busqueda.toLowerCase()));
+    const uUser = (u.username || "").toLowerCase();
+    const uNombre = (u.nombre || "").toLowerCase();
+    const uEmail = (u.email || "").toLowerCase();
+    const uCargo = (u.cargo || "").toLowerCase();
+    const b = busqueda.toLowerCase();
+
+    const cumpleTexto = uUser.includes(b) || uNombre.includes(b) || uEmail.includes(b) || uCargo.includes(b);
     const cumpleRol = filtroRol === "todos" ? true : u.rol === filtroRol;
     return cumpleTexto && cumpleRol;
   });
@@ -319,12 +355,12 @@ export default function UsuariosPage() {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-100 uppercase tracking-tight">
-                {t("Usuarios y Control de Acceso", "Users & Access Control")}
+                {t("Usuarios y Permisos", "Users & Permissions")}
               </h1>
               <p className="text-xs text-slate-400 mt-0.5">
                 {t(
-                  "Administración de roles (Master, Admin, Estándar), permisos y contraseñas",
-                  "Manage roles (Master, Admin, Standard), permissions and passwords"
+                  "Administración de usuarios, claves directas, roles (Master, Admin, Estándar) y permisos",
+                  "Manage usernames, direct passwords, roles (Master, Admin, Standard) and access"
                 )}
               </p>
             </div>
@@ -336,7 +372,7 @@ export default function UsuariosPage() {
           className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>{t("Nuevo Usuario", "New User")}</span>
+          <span>{t("Crear Nuevo Usuario", "Create New User")}</span>
         </button>
       </div>
 
@@ -362,7 +398,7 @@ export default function UsuariosPage() {
               Master
             </p>
             <p className="text-2xl font-black text-slate-100 mt-1">{countMaster}</p>
-            <p className="text-[10px] text-slate-400">{t("Acceso Total", "Full Access")}</p>
+            <p className="text-[10px] text-slate-400">{t("Control Total", "Full Control")}</p>
           </div>
           <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <Crown className="w-5 h-5" />
@@ -406,7 +442,7 @@ export default function UsuariosPage() {
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder={t("Buscar por nombre, correo o cargo...", "Search by name, email or position...")}
+            placeholder={t("Buscar por usuario, nombre o cargo...", "Search by user, name or position...")}
             className="w-full pl-10 pr-4 py-2 rounded-xl text-xs glass-input text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500/60"
           />
         </div>
@@ -437,17 +473,17 @@ export default function UsuariosPage() {
           <div className="p-12 text-center">
             <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
             <p className="text-sm font-bold text-slate-300">{t("No se encontraron usuarios", "No users found")}</p>
-            <p className="text-xs text-slate-500 mt-1">{t("Ajusta los filtros o crea un nuevo usuario", "Adjust filters or create a new user")}</p>
+            <p className="text-xs text-slate-500 mt-1">{t("Crea tu primer usuario con el botón superior", "Create your first user with the button above")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-950/40 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                  <th className="py-3.5 px-4">{t("Usuario / Cargo", "User / Position")}</th>
-                  <th className="py-3.5 px-4">{t("Correo Electrónico", "Email Address")}</th>
-                  <th className="py-3.5 px-4">{t("Rol / Nivel", "Role / Level")}</th>
-                  <th className="py-3.5 px-4">{t("Módulos Autorizados", "Authorized Modules")}</th>
+                  <th className="py-3.5 px-4">{t("Usuario / Acceso", "Username / Access")}</th>
+                  <th className="py-3.5 px-4">{t("Nombre y Apellido", "Full Name")}</th>
+                  <th className="py-3.5 px-4">{t("Rol / Privilegio", "Role / Privilege")}</th>
+                  <th className="py-3.5 px-4">{t("Módulos Asignados", "Assigned Modules")}</th>
                   <th className="py-3.5 px-4 text-center">{t("Estado", "Status")}</th>
                   <th className="py-3.5 px-4 text-right">{t("Acciones", "Actions")}</th>
                 </tr>
@@ -456,6 +492,7 @@ export default function UsuariosPage() {
                 {usuariosFiltrados.map((u) => {
                   const esMasterUser = u.rol === "master";
                   const esAdminUser = u.rol === "admin";
+                  const displayUsername = u.username || u.email?.split("@")[0] || "usuario";
                   const iniciales = (u.nombre.charAt(0) + (u.apellido?.charAt(0) || "")).toUpperCase();
 
                   return (
@@ -473,22 +510,22 @@ export default function UsuariosPage() {
                             {iniciales || "U"}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-200 flex items-center gap-1.5">
-                              {u.nombre} {u.apellido}
+                            <div className="font-bold text-slate-100 flex items-center gap-1.5 font-mono text-xs text-indigo-300">
+                              @{displayUsername}
                               {u.id === currentUser?.id && (
-                                <span className="text-[9px] font-black px-1.5 py-0.2 bg-indigo-500/20 text-indigo-300 rounded font-mono">
+                                <span className="text-[9px] font-black px-1.5 py-0.2 bg-indigo-500/25 text-indigo-200 rounded font-mono">
                                   {t("TÚ", "YOU")}
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-slate-500">{u.cargo || t("Sin cargo asignado", "No title")}</div>
+                            <div className="text-[11px] text-slate-500">{u.cargo || t("Sin cargo", "No position")}</div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Email */}
-                      <td className="py-3.5 px-4 font-mono text-slate-300">
-                        {u.email}
+                      {/* Nombre Completo */}
+                      <td className="py-3.5 px-4 font-bold text-slate-200">
+                        {u.nombre} {u.apellido}
                       </td>
 
                       {/* Rol */}
@@ -520,7 +557,7 @@ export default function UsuariosPage() {
                           </span>
                         ) : (
                           <span className="text-[11px] text-slate-400">
-                            <strong className="text-slate-200">{u.permisos?.length || 0}</strong> {t("módulos asignados", "assigned modules")}
+                            <strong className="text-slate-200">{u.permisos?.length || 0}</strong> {t("módulos autorizados", "authorized modules")}
                           </span>
                         )}
                       </td>
@@ -543,20 +580,20 @@ export default function UsuariosPage() {
                       {/* Acciones */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* Cambiar Contraseña */}
+                          {/* Cambiar Contraseña Directamente */}
                           <button
-                            title={t("Cambiar o resetear contraseña", "Change or reset password")}
+                            title={t("Cambiar contraseña directamente", "Change password directly")}
                             onClick={() => abrirModalPassword(u)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition-colors cursor-pointer"
                           >
                             <KeyRound className="w-4 h-4" />
                           </button>
 
-                          {/* Editar */}
+                          {/* Editar Usuario */}
                           <button
                             title={t("Editar datos y permisos", "Edit user and permissions")}
                             onClick={() => abrirModalEditar(u)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
@@ -566,7 +603,7 @@ export default function UsuariosPage() {
                             title={u.activo ? t("Desactivar cuenta", "Deactivate account") : t("Activar cuenta", "Activate account")}
                             onClick={() => handleToggleEstado(u)}
                             disabled={esMasterUser && u.id === currentUser?.id}
-                            className={`p-1.5 rounded-lg transition-colors ${
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                               u.activo
                                 ? "text-slate-400 hover:text-amber-400 hover:bg-amber-500/10"
                                 : "text-emerald-400 hover:bg-emerald-500/10"
@@ -580,7 +617,7 @@ export default function UsuariosPage() {
                             title={t("Eliminar usuario", "Delete user")}
                             onClick={() => handleEliminarUsuario(u)}
                             disabled={u.id === currentUser?.id || (esMasterUser && !isMaster)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors disabled:opacity-30"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer disabled:opacity-30"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -607,16 +644,16 @@ export default function UsuariosPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-100">
-                    {usuarioEditando ? t("Editar Usuario", "Edit User") : t("Nuevo Usuario", "New User")}
+                    {usuarioEditando ? t("Editar Usuario", "Edit User") : t("Crear Nuevo Usuario", "Create New User")}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    {t("Define los datos personales, rol y módulos autorizados", "Set user profile, role and module access")}
+                    {t("Establece el nombre de usuario, contraseña, rol y módulos permitidos", "Set username, password, role and allowed modules")}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setModalUsuario(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -631,7 +668,62 @@ export default function UsuariosPage() {
                 </div>
               )}
 
-              {/* Datos Básicos */}
+              {/* Datos de Acceso */}
+              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3">
+                <h4 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5" />
+                  {t("Credenciales de Acceso (Usuario y Contraseña)", "Access Credentials (User & Password)")}
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                      {t("Nombre de Usuario (Login)", "Username (Login)")} *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-3 flex items-center text-slate-500 font-mono text-xs font-bold">@</span>
+                      <input
+                        type="text"
+                        value={formData.username}
+                        onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, "") })}
+                        required
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        placeholder="ej. julio, admin, operador"
+                        className="w-full pl-8 pr-3 py-2 rounded-xl text-xs glass-input text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                      {usuarioEditando ? t("Nueva Contraseña (Opcional)", "New Password (Optional)") : t("Contraseña de Acceso", "Password")} *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-500">
+                        <Lock className="w-3.5 h-3.5" />
+                      </div>
+                      <input
+                        type={showFormPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        required={!usuarioEditando}
+                        placeholder={usuarioEditando ? t("Dejar en blanco para mantener", "Leave blank to keep") : t("Mínimo 4 caracteres", "Min 4 chars")}
+                        className="w-full pl-8 pr-9 py-2 rounded-xl text-xs glass-input text-slate-100 focus:outline-none focus:border-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowFormPassword(!showFormPassword)}
+                        className="absolute inset-y-0 right-2.5 flex items-center text-slate-500 hover:text-slate-300"
+                      >
+                        {showFormPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Datos Personales */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5">
@@ -642,7 +734,7 @@ export default function UsuariosPage() {
                     value={formData.nombre}
                     onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                     required
-                    placeholder="Ej. Carlos"
+                    placeholder="Ej. Julio"
                     className="w-full px-3.5 py-2 rounded-xl text-xs glass-input text-slate-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -655,42 +747,27 @@ export default function UsuariosPage() {
                     type="text"
                     value={formData.apellido}
                     onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
-                    placeholder="Ej. Mendoza"
+                    placeholder="Ej. Flores"
                     className="w-full px-3.5 py-2 rounded-xl text-xs glass-input text-slate-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    {t("Correo Electrónico", "Email Address")} *
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    disabled={!!usuarioEditando}
-                    placeholder="ejemplo@maximport.com"
-                    className="w-full px-3.5 py-2 rounded-xl text-xs glass-input text-slate-100 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    {t("Cargo / Puesto", "Job Title / Position")}
+                    {t("Cargo / Puesto", "Job Title")}
                   </label>
                   <input
                     type="text"
                     value={formData.cargo}
                     onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
-                    placeholder="Ej. Coordinador de Logística"
+                    placeholder="Ej. Gerente de Operaciones"
                     className="w-full px-3.5 py-2 rounded-xl text-xs glass-input text-slate-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    {t("Teléfono", "Phone")}
+                    {t("Teléfono (Opcional)", "Phone (Optional)")}
                   </label>
                   <input
                     type="text"
@@ -700,23 +777,6 @@ export default function UsuariosPage() {
                     className="w-full px-3.5 py-2 rounded-xl text-xs glass-input text-slate-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
-
-                {!usuarioEditando && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                      {t("Contraseña Inicial", "Initial Password")} *
-                    </label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                      minLength={6}
-                      placeholder="Mínimo 6 caracteres"
-                      className="w-full px-3.5 py-2 rounded-xl text-xs glass-input text-slate-100 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Selector de Rol */}
@@ -749,7 +809,7 @@ export default function UsuariosPage() {
                       />
                     </div>
                     <p className="text-[10px] text-slate-400 leading-relaxed">
-                      {t("Control absoluto. Gestión de todos los usuarios y finanzas.", "Full control over all users, finances and settings.")}
+                      {t("Control total del sistema y de todos los usuarios.", "Full control over entire ERP & users.")}
                     </p>
                   </label>
 
@@ -776,7 +836,7 @@ export default function UsuariosPage() {
                       />
                     </div>
                     <p className="text-[10px] text-slate-400 leading-relaxed">
-                      {t("Acceso a todos los módulos operativos y gestión de usuarios estándar.", "Access to all ERP modules & standard user management.")}
+                      {t("Acceso a todos los módulos operativos y creación de usuarios estándar.", "All ERP operational modules & standard user management.")}
                     </p>
                   </label>
 
@@ -803,13 +863,13 @@ export default function UsuariosPage() {
                       />
                     </div>
                     <p className="text-[10px] text-slate-400 leading-relaxed">
-                      {t("Acceso selectivo solo a los módulos marcados en la lista.", "Selective access only to checked modules below.")}
+                      {t("Acceso selectivo únicamente a los módulos marcados.", "Selective access only to checked modules.")}
                     </p>
                   </label>
                 </div>
               </div>
 
-              {/* Matriz de Permisos por Módulo (Solo visible o editable para rol Estándar) */}
+              {/* Matriz de Permisos por Módulo (Solo para rol Estándar) */}
               {formData.rol === "standard" && (
                 <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
@@ -825,7 +885,7 @@ export default function UsuariosPage() {
                       <button
                         type="button"
                         onClick={handleSeleccionarTodosPermisos}
-                        className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300"
+                        className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 cursor-pointer"
                       >
                         {t("Marcar Todos", "Select All")}
                       </button>
@@ -833,7 +893,7 @@ export default function UsuariosPage() {
                       <button
                         type="button"
                         onClick={handleLimpiarPermisos}
-                        className="text-[10px] font-bold text-slate-500 hover:text-slate-300"
+                        className="text-[10px] font-bold text-slate-500 hover:text-slate-300 cursor-pointer"
                       >
                         {t("Limpiar", "Clear")}
                       </button>
@@ -876,14 +936,14 @@ export default function UsuariosPage() {
                 <button
                   type="button"
                   onClick={() => setModalUsuario(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   {t("Cancelar", "Cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={formLoading}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-lg shadow-indigo-600/30 disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-lg shadow-indigo-600/30 cursor-pointer disabled:opacity-50"
                 >
                   {formLoading
                     ? t("Guardando...", "Saving...")
@@ -897,13 +957,13 @@ export default function UsuariosPage() {
         </div>
       )}
 
-      {/* Modal Cambiar / Resetear Password de Usuario */}
+      {/* Modal Cambiar Password Directamente */}
       {modalPassword && usuarioPassword && (
         <div className="fixed inset-0 z-[85] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-md shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-200">
             <button
               onClick={() => setModalPassword(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5"
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -914,9 +974,9 @@ export default function UsuariosPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-100">
-                  {t("Restablecer Contraseña", "Reset Password")}
+                  {t("Modificar Contraseña", "Change Password")}
                 </h3>
-                <p className="text-xs text-slate-400 font-mono">{usuarioPassword.email}</p>
+                <p className="text-xs text-indigo-400 font-mono">@{usuarioPassword.username} ({usuarioPassword.nombre})</p>
               </div>
             </div>
 
@@ -937,39 +997,61 @@ export default function UsuariosPage() {
               </div>
             )}
 
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 space-y-2">
-                <p className="font-bold text-slate-200 flex items-center gap-1.5">
-                  <Send className="w-3.5 h-3.5 text-indigo-400" />
-                  {t("Opción Recomendada: Correo de Recuperación", "Recommended: Recovery Email")}
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  {t(
-                    "Envía un enlace seguro de Firebase Auth para que el usuario ingrese su nueva contraseña personalmente.",
-                    "Send a secure Firebase Auth reset link so the user creates their new password."
-                  )}
-                </p>
-                <button
-                  type="button"
-                  disabled={passLoading}
-                  onClick={handleEnviarResetEmail}
-                  className="w-full mt-1 py-2 px-3 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  {passLoading ? t("Enviando...", "Sending...") : t("Enviar Correo de Recuperación", "Send Password Reset Email")}
-                </button>
+            <form onSubmit={handleGuardarNuevaPassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  {t("Nueva Contraseña de Acceso", "New Access Password")}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-500">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showPassModal ? "text" : "password"}
+                    value={nuevoPassword}
+                    onChange={(e) => setNuevoPassword(e.target.value)}
+                    required
+                    minLength={4}
+                    placeholder="Mínimo 4 caracteres"
+                    className="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs glass-input text-slate-100 focus:outline-none focus:border-indigo-500/60"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassModal(!showPassModal)}
+                    className="absolute inset-y-0 right-3 flex items-center text-slate-500 hover:text-slate-300"
+                  >
+                    {showPassModal ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setModalPassword(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white cursor-pointer"
                 >
-                  {t("Cerrar", "Close")}
+                  {t("Cancelar", "Cancel")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={passLoading}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-lg shadow-indigo-600/30 cursor-pointer disabled:opacity-50"
+                >
+                  {passLoading ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <span>{t("Guardando...", "Saving...")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>{t("Guardar Contraseña", "Save Password")}</span>
+                    </>
+                  )}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

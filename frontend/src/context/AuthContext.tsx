@@ -7,23 +7,24 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  updatePassword as fbUpdatePassword,
-  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from "firebase/firestore";
 import { Usuario } from "@/types";
 import { tienePermiso, getPermisosPorDefecto } from "@/lib/permisos";
-import { inicializarMasterPorDefecto } from "@/lib/api/usuarios";
+import {
+  buscarUsuarioPorLogin,
+  inicializarMasterPorDefecto,
+  cambiarPasswordUsuario,
+} from "@/lib/api/usuarios";
 
 interface AuthContextType {
   user: FirebaseUser | null;
   usuario: Usuario | null;
   loading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (usernameOrEmail: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
   cambiarPassword: (nuevaPassword: string) => Promise<void>;
-  enviarRecuperacionPassword: (email: string) => Promise<void>;
   refrescarPerfil: () => Promise<void>;
   hasPermission: (ruta: string) => boolean;
   isMaster: boolean;
@@ -33,124 +34,139 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const STORAGE_KEY = "erp_session_user";
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const cargarPerfil = async (fbUser: FirebaseUser): Promise<Usuario | null> => {
-    try {
-      const ref = doc(db, "usuarios", fbUser.uid);
-      const snap = await getDoc(ref);
-
-      if (snap.exists()) {
-        const u = { id: snap.id, ...snap.data() } as Usuario;
-        // Actualizar último acceso
-        try {
-          await updateDoc(ref, { ultimoAcceso: new Date().toISOString() });
-        } catch {
-          // ignore
-        }
-        return u;
-      }
-
-      // Si no existe el documento en Firestore, creamos uno inicial
-      // Si el email contiene "admin" o es el primer usuario, lo promovemos a master
-      const esPrimerMaster = fbUser.email?.toLowerCase().includes("admin") || false;
-      const nuevoUsuario: Usuario = {
-        id: fbUser.uid,
-        email: fbUser.email || "",
-        nombre: fbUser.displayName || fbUser.email?.split("@")[0] || "Usuario",
-        apellido: "",
-        rol: esPrimerMaster ? "master" : "admin",
-        permisos: getPermisosPorDefecto(esPrimerMaster ? "master" : "admin"),
-        activo: true,
-        cargo: esPrimerMaster ? "Administrador Master" : "Administrador",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        ultimoAcceso: new Date().toISOString(),
-      };
-
-      await setDoc(ref, nuevoUsuario, { merge: true });
-      return nuevoUsuario;
-    } catch (e) {
-      console.error("Error al cargar perfil de usuario:", e);
-      return null;
-    }
-  };
-
-  const refrescarPerfil = async () => {
-    if (auth.currentUser) {
-      const u = await cargarPerfil(auth.currentUser);
-      setUsuario(u);
-    }
-  };
-
+  // Cargar sesión persistida al inicio
   useEffect(() => {
+    async function initSession() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as Usuario;
+          // Validar con Firestore que el usuario siga activo y exista
+          const ref = doc(db, "usuarios", parsed.id);
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            const currentData = { id: snap.id, ...snap.data() } as Usuario;
+            if (currentData.activo) {
+              setUsuario(currentData);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+            } else {
+              localStorage.removeItem(STORAGE_KEY);
+              setUsuario(null);
+            }
+          } else {
+            // Usuario fue eliminado
+            localStorage.removeItem(STORAGE_KEY);
+            setUsuario(null);
+          }
+        }
+      } catch (e) {
+        console.error("Error al restaurar sesión:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    initSession();
+
+    // Sincronizar también con Firebase Auth por si se usa
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
         setUser(fbUser);
-        const profile = await cargarPerfil(fbUser);
-        setUsuario(profile);
       } else {
         setUser(null);
-        setUsuario(null);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, pass: string) => {
-    try {
-      const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
-      const profile = await cargarPerfil(cred.user);
+  const login = async (usernameOrEmail: string, pass: string) => {
+    const cleanInput = usernameOrEmail.trim();
+    if (!cleanInput) throw new Error("Ingresa tu nombre de usuario o correo.");
+    if (!pass) throw new Error("Ingresa tu contraseña.");
 
-      if (profile && profile.activo === false) {
-        await signOut(auth);
-        setUser(null);
-        setUsuario(null);
-        throw new Error("Tu cuenta se encuentra desactivada. Contacta al administrador.");
-      }
+    // 1. Buscar en Firestore si existe este usuario por username o email
+    let perfil = await buscarUsuarioPorLogin(cleanInput);
 
-      setUser(cred.user);
-      setUsuario(profile);
-    } catch (err: unknown) {
-      const e = err as { code?: string; message?: string };
-      // Si el usuario no existe en Firebase Auth, verificar si la base de datos de usuarios está vacía
-      if (e.code === "auth/invalid-credential" || e.code === "auth/user-not-found") {
-        try {
-          const snap = await getDocs(collection(db, "usuarios"));
-          if (snap.empty) {
-            // Inicialización automática del primer usuario Master del sistema
-            const newCred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
-            const masterProfile = await inicializarMasterPorDefecto(newCred.user.uid, email.trim());
-            setUser(newCred.user);
-            setUsuario(masterProfile);
-            return;
-          }
-        } catch {
-          // fallback a error original
-        }
+    // 2. Si no existe ningún usuario en la base de datos (primer inicio del sistema), auto-creamos al Master
+    if (!perfil) {
+      const snap = await getDocs(collection(db, "usuarios"));
+      if (snap.empty) {
+        const masterId = "master_" + Date.now();
+        perfil = await inicializarMasterPorDefecto(masterId, cleanInput, pass);
       }
-      throw err;
     }
+
+    if (!perfil) {
+      throw new Error("Usuario o contraseña incorrectos.");
+    }
+
+    if (perfil.activo === false) {
+      throw new Error("Tu cuenta se encuentra desactivada. Contacta al administrador.");
+    }
+
+    // 3. Validar contraseña
+    // Si el usuario tiene password guardado en Firestore, comparamos
+    if (perfil.password && perfil.password !== pass) {
+      // Intentar también con Firebase Auth por compatibilidad
+      try {
+        const email = cleanInput.includes("@") ? cleanInput : `${cleanInput.toLowerCase()}@maximport.local`;
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch {
+        throw new Error("Usuario o contraseña incorrectos.");
+      }
+    }
+
+    // Actualizar último acceso
+    try {
+      await updateDoc(doc(db, "usuarios", perfil.id), {
+        ultimoAcceso: new Date().toISOString(),
+      });
+    } catch {
+      // ignore
+    }
+
+    // Guardar sesión
+    setUsuario(perfil);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(perfil));
   };
 
   const logout = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch {
+      // ignore
+    }
+    localStorage.removeItem(STORAGE_KEY);
     setUser(null);
     setUsuario(null);
   };
 
   const cambiarPassword = async (nuevaPassword: string) => {
-    if (!auth.currentUser) throw new Error("No hay una sesión activa");
-    await fbUpdatePassword(auth.currentUser, nuevaPassword);
+    if (!usuario) throw new Error("No hay una sesión activa");
+    await cambiarPasswordUsuario(usuario.id, nuevaPassword);
+    const updated = { ...usuario, password: nuevaPassword, updatedAt: new Date().toISOString() };
+    setUsuario(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
-  const enviarRecuperacionPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email.trim());
+  const refrescarPerfil = async () => {
+    if (usuario) {
+      const ref = doc(db, "usuarios", usuario.id);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const data = { id: snap.id, ...snap.data() } as Usuario;
+        setUsuario(data);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }
+    }
   };
 
   const hasPermission = (ruta: string): boolean => {
@@ -171,7 +187,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         cambiarPassword,
-        enviarRecuperacionPassword,
         refrescarPerfil,
         hasPermission,
         isMaster,

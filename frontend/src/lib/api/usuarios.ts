@@ -7,6 +7,7 @@ import {
   updateDoc,
   deleteDoc,
   query,
+  where,
   orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -28,7 +29,6 @@ export async function obtenerUsuarios(): Promise<Usuario[]> {
     })) as Usuario[];
   } catch (e) {
     console.error("Error al obtener usuarios:", e);
-    // Fallback sin order si no hay índice
     const snap = await getDocs(collection(db, COLECCION));
     return snap.docs.map((d) => ({
       id: d.id,
@@ -38,7 +38,7 @@ export async function obtenerUsuarios(): Promise<Usuario[]> {
 }
 
 /**
- * Obtener un usuario por su UID / ID de documento.
+ * Obtener un usuario por su ID de documento.
  */
 export async function obtenerUsuarioPorId(id: string): Promise<Usuario | null> {
   try {
@@ -53,12 +53,36 @@ export async function obtenerUsuarioPorId(id: string): Promise<Usuario | null> {
 }
 
 /**
- * Crear o registrar un nuevo usuario en Firestore.
+ * Buscar usuario por username o email (case-insensitive).
+ */
+export async function buscarUsuarioPorLogin(identificador: string): Promise<Usuario | null> {
+  try {
+    const cleanId = identificador.trim().toLowerCase();
+    const snap = await getDocs(collection(db, COLECCION));
+    const encontrado = snap.docs.find((d) => {
+      const data = d.data();
+      const uUsername = (data.username || "").toLowerCase();
+      const uEmail = (data.email || "").toLowerCase();
+      return uUsername === cleanId || uEmail === cleanId;
+    });
+
+    if (!encontrado) return null;
+    return { id: encontrado.id, ...encontrado.data() } as Usuario;
+  } catch (e) {
+    console.error("Error al buscar usuario por login:", e);
+    return null;
+  }
+}
+
+/**
+ * Crear o registrar un nuevo usuario en Firestore con soporte de username y password directo.
  */
 export async function guardarUsuario(
   id: string,
   datos: {
-    email: string;
+    username: string;
+    password?: string;
+    email?: string;
     nombre: string;
     apellido?: string;
     rol: RolUsuario;
@@ -73,9 +97,16 @@ export async function guardarUsuario(
     ? datos.permisos
     : getPermisosPorDefecto(datos.rol);
 
+  const cleanUsername = (datos.username || datos.email?.split("@")[0] || "usuario")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]/g, "");
+
   const usuario: Usuario = {
     id,
-    email: datos.email.trim().toLowerCase(),
+    username: cleanUsername,
+    password: datos.password || "123456",
+    email: datos.email?.trim().toLowerCase() || `${cleanUsername}@maximport.local`,
     nombre: datos.nombre.trim(),
     apellido: datos.apellido?.trim() || "",
     rol: datos.rol,
@@ -107,6 +138,17 @@ export async function actualizarUsuario(
 }
 
 /**
+ * Cambiar directamente la contraseña de cualquier usuario en Firestore.
+ */
+export async function cambiarPasswordUsuario(id: string, nuevoPassword: string): Promise<void> {
+  const ref = doc(db, COLECCION, id);
+  await updateDoc(ref, {
+    password: nuevoPassword,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/**
  * Cambiar estado de activación de un usuario (Activo / Inactivo).
  */
 export async function cambiarEstadoUsuario(id: string, activo: boolean): Promise<void> {
@@ -128,10 +170,17 @@ export async function eliminarUsuario(id: string): Promise<void> {
 /**
  * Inicializar usuario Master por defecto si la base de datos está vacía.
  */
-export async function inicializarMasterPorDefecto(uid: string, email: string): Promise<Usuario> {
+export async function inicializarMasterPorDefecto(
+  id: string,
+  username: string,
+  password?: string
+): Promise<Usuario> {
+  const cleanUser = username.trim().toLowerCase();
   const masterDefault: Usuario = {
-    id: uid,
-    email: email.toLowerCase(),
+    id,
+    username: cleanUser,
+    password: password || "admin123",
+    email: cleanUser.includes("@") ? cleanUser : `${cleanUser}@maximport.local`,
     nombre: "Administrador Master",
     apellido: "Principal",
     rol: "master",
@@ -143,6 +192,6 @@ export async function inicializarMasterPorDefecto(uid: string, email: string): P
     ultimoAcceso: new Date().toISOString(),
   };
 
-  await setDoc(doc(db, COLECCION, uid), masterDefault, { merge: true });
+  await setDoc(doc(db, COLECCION, id), masterDefault, { merge: true });
   return masterDefault;
 }

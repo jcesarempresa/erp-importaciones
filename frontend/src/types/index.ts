@@ -303,8 +303,10 @@ export interface ModuloPermiso {
 }
 
 export interface Usuario {
-  id: string; // Firebase Auth UID o ID de documento
-  email: string;
+  id: string; // ID de documento / UID
+  username: string; // Nombre de usuario sin correo, ej: "admin", "julio"
+  email?: string; // Correo opcional
+  password?: string; // Contraseña de acceso
   nombre: string;
   apellido?: string;
   rol: RolUsuario;
