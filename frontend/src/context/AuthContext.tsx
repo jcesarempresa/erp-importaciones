@@ -5,12 +5,13 @@ import {
   User as FirebaseUser,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   updatePassword as fbUpdatePassword,
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from "firebase/firestore";
 import { Usuario } from "@/types";
 import { tienePermiso, getPermisosPorDefecto } from "@/lib/permisos";
 import { inicializarMasterPorDefecto } from "@/lib/api/usuarios";
@@ -102,18 +103,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, pass: string) => {
-    const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
-    const profile = await cargarPerfil(cred.user);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
+      const profile = await cargarPerfil(cred.user);
 
-    if (profile && profile.activo === false) {
-      await signOut(auth);
-      setUser(null);
-      setUsuario(null);
-      throw new Error("Tu cuenta se encuentra desactivada. Contacta al administrador.");
+      if (profile && profile.activo === false) {
+        await signOut(auth);
+        setUser(null);
+        setUsuario(null);
+        throw new Error("Tu cuenta se encuentra desactivada. Contacta al administrador.");
+      }
+
+      setUser(cred.user);
+      setUsuario(profile);
+    } catch (err: unknown) {
+      const e = err as { code?: string; message?: string };
+      // Si el usuario no existe en Firebase Auth, verificar si la base de datos de usuarios está vacía
+      if (e.code === "auth/invalid-credential" || e.code === "auth/user-not-found") {
+        try {
+          const snap = await getDocs(collection(db, "usuarios"));
+          if (snap.empty) {
+            // Inicialización automática del primer usuario Master del sistema
+            const newCred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+            const masterProfile = await inicializarMasterPorDefecto(newCred.user.uid, email.trim());
+            setUser(newCred.user);
+            setUsuario(masterProfile);
+            return;
+          }
+        } catch {
+          // fallback a error original
+        }
+      }
+      throw err;
     }
-
-    setUser(cred.user);
-    setUsuario(profile);
   };
 
   const logout = async () => {
