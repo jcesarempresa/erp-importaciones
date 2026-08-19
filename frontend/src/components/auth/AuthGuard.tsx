@@ -13,17 +13,17 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { user, usuario, loading, hasPermission } = useAuth();
+  const { usuario, loading, hasPermission } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
   const isLoginPage = pathname === "/login";
 
   useEffect(() => {
-    if (!loading && !user && !isLoginPage) {
+    if (!loading && !usuario && !isLoginPage) {
       router.push("/login");
     }
-  }, [loading, user, isLoginPage, router]);
+  }, [loading, usuario, isLoginPage, router]);
 
   // Si estamos en /login, no mostramos el layout de Dashboard (Header / Sidebar)
   if (isLoginPage) {
@@ -45,7 +45,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   }
 
   // Si no está autenticado y no está en /login, retornamos pantalla de redirección
-  if (!user || !usuario) {
+  if (!usuario) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-200 p-4">
         <div className="glass-card p-8 max-w-md text-center">
